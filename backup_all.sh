@@ -22,7 +22,7 @@ do
         if [ $(cat ${dir}/err.log | wc -w | awk '{ print $1 }') -gt 0 ]; then
             cat ${dir}/err.log | mail -s "[SBE] !!!ERROR!!! Backup error detected on host: $host" $mail
         fi
-        if [[ "$2" == "--log" ]]; then
+        if [[ "$@" =~ "--log" ]]; then
             cat ${dir}/bac.log | mail -s "[SBE] Backup log from host: $host" $mail
         fi
     fi
