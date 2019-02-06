@@ -37,10 +37,10 @@ BWEEKS=1
 CURRENT_DAY=$((10#$(date +%j)))
 CURRENT_WEEK=$((10#$(date +%V)))
 
-if [ "$1" == "--weekly" ]; then
+if [ "$@" =~ "--weekly" ]; then
      BUCKET=$(( CURRENT_WEEK % BWEEKS ))
      BUCKET_TYPE="weekly"
-elif [ "$1" == "--archive" ]; then
+elif [ "$@" =~ "--archive" ]; then
      BUCKET=$(( CURRENT_WEEK % BWEEKS ))
      BUCKET_TYPE="weekly"
      TYPE="tar"
@@ -58,7 +58,7 @@ if [ $BACKUP -eq 1 ]; then
         mdir="${sdir}${SHARE}/"
     # # #
 
-    if [[ $1 == "sshCopy" ]]; then
+    if [[ $@ =~ "--sshCopy" ]]; then
 
 	ssh-copy-id -i ~/.ssh/id_rsa.pub -p $PORT $USER@$SERVER
 
