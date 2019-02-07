@@ -9,12 +9,15 @@ mkdir -p $bdir
 
 for x in ${hdir}*; do
 
-      if [ -d $x ] && [[ ! $x =~ "tools" ]]; then
-            destination="${x}/"
-            server=${x##*/}
-            echo "Backup: ${server}"
-            server="${server}/"
-            rsync -a ${destination}server.config ${bdir}${server}
-      fi
+    if [ -d $x ] && [[ ! $x =~ "tools" ]]; then
+        destination="${x}/"
+        server=${x##*/}
+        echo "Backup: ${server}"
+        server="${server}/"
+        rsync -a ${destination}server.config ${bdir}${server}
+        if [ -f ${destination}mysql.cnf ]; then
+            rsync -a ${destination}mysql.cnf ${bdir}${server}
+        fi
+    fi
 
 done
