@@ -81,7 +81,8 @@ do
     fi
 
     if [ "$skipdb" == "-1" ] ; then
-        FILE="${destination}$db.$HOST.$DATE"
+	DOW=$(date +%u)
+        FILE="${destination}$db.$DOW"
         # do all inone job in pipe,
         # connect to mysql using mysqldump for select mysql database
         # and pipe it out to gz file in backup dir :)
@@ -96,6 +97,11 @@ do
             $MYSQLDUMP --defaults-file=$authFile $DUMP_OPTS  $db | $GZIP -9 | cstream -t 100000000 > "$FILE.gz" 2> $error_log
         fi
     fi
+
+    # # #
+    # Delete backups if they are more then $mysqlMax
+
+
 done
 
 
