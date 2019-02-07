@@ -26,6 +26,7 @@ BWEEKS=1
 # # #
 # Source vars
     if [ -f ${sdir}server.config ]; then
+        mysqlIF="false"
         source ${sdir}server.config
     else
         >&2 echo "No server.config found!!!"
@@ -115,11 +116,34 @@ if [ $BACKUP -eq 1 ]; then
                   eval ${radd}
                done
 
+
             else
 
                 >&2 echo "TYPE not defined"
                 exit 12
 
+            fi
+            if [[ $mysqlIF == "true" ]]; then
+
+                echo "mySql Backup"
+
+                bmdi="${sdir}mysql/${BUCKET_TYPE}/${BUCKET}/"
+                mkdir -p ${bmdi}
+
+                # Get mySqlPort
+                myPort=$(myPort=$(cat tools/mysql.cnf |grep 'port='); echo $myPort |grep -oP "(?<=').*?(?=')";)
+
+                ssh -o ServerAliveInterval=10 -M -T -M -N -L 3309:127.0.0.1:${myPort} ${USER}@${SERVER} &
+                pid=$!
+                echo "Got pid $pid ..."
+                sleep 2
+                echo "backup..."
+              
+                # $1:mysql config file, $2:backupdir, $3:sendmail(1/0), $4:admin mail, $5:delete backups after 
+                /bin/bash ${rdir}tools/mysql-backup.sh "${sdir}mysql.cnf" "${bmdi}" "1" "$admin" "$BDAYS"
+               
+                echo "kill tunnel with $pid..."
+                kill -9 $pid
             fi
             # # #
 
