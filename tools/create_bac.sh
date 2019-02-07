@@ -2,7 +2,7 @@
 
 # Checks dependencies and tries to install them
 installed=0
-dep=("mysql-client" "mailutils" "pwgen")
+dep=("mysql-client" "mysql-server" "mailutils" "pwgen" "cstream")
 for x in "${dep[@]}"; do
     dpkg -s $x &> /dev/null
     if [ $? -eq 1 ]; then
@@ -58,29 +58,26 @@ if [[ $mysqlIF == "true" ]]; then
     mPa="$(pwgen -c -n -y -B -1 24 | tr '`"' '$@')"
     echo
     echo 'Create an user on the mysql server'
+    echo 'bash: mysql -u root -p'
     echo "mysql: GRANT ALL PRIVILEGES ON *.* to SBE@'localhost' IDENTIFIED BY '$mPa';"
     echo 'mysql: FLUSH PRIVILEGES;'
     echo 'mysql: quit'
     read -p 'Approve if done [Enter]'
 
 
-	if [ $installed -eq 1 ]; then
-		read -p "MySQL User: " mUs
-		read -p "MySQL Port: " mPo
-		echo "MySQL Pass: " $mPa
+	read -e -p "MySQL User: " -i "SBE" mUs
+	read -e -p "MySQL Port: " -i "3306" mPo
+	echo "MySQL Pass: " $mPa
 
-		rsync -a ${hdir}tools/mysql.cnf     ${bacfol}
-		sed -i 's/!#mysqlUSER#!/'$mUs'/g'   ${bacfol}mysql.cnf
-		sed -i 's/!#mysqlPASS#!/'$mPa'/g'   ${bacfol}mysql.cnf
-		sed -i 's/!#mysqlPORT#!/'$mPo'/g'   ${bacfol}mysql.cnf
-		sed -i 's/!#mysqlIF#!/true/g'       ${bacfol}server.config
-	else
-		echo ""; echo "mySql will not be supported because of missing dependencies"
-	fi
+	rsync -a ${hdir}tools/mysql.cnf     ${bacfol}
+	sed -i 's/!#mysqlUSER#!/'$mUs'/g'   ${bacfol}mysql.cnf
+	sed -i 's/!#mysqlPASS#!/'$mPa'/g'   ${bacfol}mysql.cnf
+	sed -i 's/!#mysqlPORT#!/'$mPo'/g'   ${bacfol}mysql.cnf
+	sed -i 's/!#mysqlIF#!/true/g'       ${bacfol}server.config
 fi
 
 
 echo "..."
 echo "Configuration finished"
 echo "Starting backup process for the first time"
-bash ${bacfol}backup_server.sh
+#bash ${bacfol}backup_server.sh

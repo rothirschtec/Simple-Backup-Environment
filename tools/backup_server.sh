@@ -84,6 +84,32 @@ if [ $BACKUP -eq 1 ]; then
         # Backup process
         ( 
 
+            if [[ $mysqlIF == "true" ]]; then
+
+                echo "mySql Backup"
+
+                bmdi="${sdir}mysql/${BUCKET_TYPE}/${BUCKET}/"
+                mkdir -p ${bmdi}
+
+                # Get mySqlPort
+                myPort=$(myPort=$(cat ${sdir}mysql.cnf |grep 'remoteport='); echo $myPort |grep -oP "(?<=').*?(?=')";)
+
+
+                ssh -p ${PORT} -o ServerAliveInterval=10 -M -T -M -N -L 3309:127.0.0.1:${myPort} ${USER}@${SERVER} 2>  ${sdir}err.log &
+                pid=$!
+                echo "Got pid $pid ..."
+                if [ $(wc -c ${sdir}err.log | awk '{print $1}') -eq 0 ]; then
+                    sleep 2
+                    echo "backup..."
+                  
+                    # $1:mysql config file, $2:backupdir, $3:sendmail(1/0), $4:mail mail, $5:delete backups after 
+                    /bin/bash ${rdir}tools/mysql-backup.sh "${sdir}mysql.cnf" "${bmdi}" "$mail" "$sdir"
+                   
+                fi
+                echo "kill tunnel with $pid..."
+                kill -9 $pid
+            fi
+
             bdir="${sdir}rotate_bak/${BUCKET_TYPE}/${BUCKET}/"
             mkdir -p ${bdir}
             echo "Starting Backup: $(date +"%y-%m-%d %H:%M")"
@@ -131,31 +157,6 @@ if [ $BACKUP -eq 1 ]; then
                 >&2 echo "TYPE not defined"
                 exit 12
 
-            fi
-            if [[ $mysqlIF == "true" ]]; then
-
-                echo "mySql Backup"
-
-                bmdi="${sdir}mysql/${BUCKET_TYPE}/${BUCKET}/"
-                mkdir -p ${bmdi}
-
-                # Get mySqlPort
-                myPort=$(myPort=$(cat ${sdir}mysql.cnf |grep 'remoteport='); echo $myPort |grep -oP "(?<=').*?(?=')";)
-
-
-                ssh -p ${PORT} -o ServerAliveInterval=10 -M -T -M -N -L 3309:127.0.0.1:${myPort} ${USER}@${SERVER} 2>  ${sdir}err.log &
-                pid=$!
-                echo "Got pid $pid ..."
-                if [ $(wc -c ${sdir}err.log | awk '{print $1}') -eq 0 ]; then
-                    sleep 2
-                    echo "backup..."
-                  
-                    # $1:mysql config file, $2:backupdir, $3:sendmail(1/0), $4:mail mail, $5:delete backups after 
-                    /bin/bash ${rdir}tools/mysql-backup.sh "${sdir}mysql.cnf" "${bmdi}" "$mail" "$sdir"
-                   
-                fi
-                echo "kill tunnel with $pid..."
-                kill -9 $pid
             fi
             # # #
 
