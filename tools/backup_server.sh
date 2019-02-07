@@ -38,10 +38,10 @@ BWEEKS=1
 CURRENT_DAY=$((10#$(date +%j)))
 CURRENT_WEEK=$((10#$(date +%V)))
 
-if [ "$@" =~ "--weekly" ]; then
+if [[ $@ =~ "--weekly" ]]; then
      BUCKET=$(( CURRENT_WEEK % BWEEKS ))
      BUCKET_TYPE="weekly"
-elif [ "$@" =~ "--archive" ]; then
+elif [[ $@ =~ "--archive" ]]; then
      BUCKET=$(( CURRENT_WEEK % BWEEKS ))
      BUCKET_TYPE="weekly"
      TYPE="tar"
