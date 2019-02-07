@@ -2,7 +2,7 @@
 
 # Checks dependencies and tries to install them
 installed=0
-dep=("mysql-client" "mailutils")
+dep=("mysql-client" "mailutils" "pwgen")
 for x in "${dep[@]}"; do
     dpkg -s $x &> /dev/null
     if [ $? -eq 1 ]; then
@@ -11,6 +11,9 @@ for x in "${dep[@]}"; do
         if [[ $install == [yY] ]]; then
             apt-get install $x
             installed=1
+	else
+		echo ""; echo "Sorry but you have to install the dependencies at least"
+		exit 1
         fi
     fi
 done
@@ -52,7 +55,7 @@ sed -i 's/!#User#!/'$suser'/g'          ${bacfol}server.config
 # mariadb
 if [[ $mysqlIF == "true" ]]; then 
 
-    mPa="$(pwgen -sy -1 24)"
+    mPa="$(pwgen -c -n -y -B -1 24 | tr '`"' '$@')"
     echo
     echo 'Create an user on the mysql server'
     echo "mysql: GRANT ALL PRIVILEGES ON *.* to SBE@'localhost' IDENTIFIED BY '$mPa';"
