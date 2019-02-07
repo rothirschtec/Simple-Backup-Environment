@@ -81,8 +81,9 @@ do
     fi
 
     if [ "$skipdb" == "-1" ] ; then
-	DOW=$(date +%u)
-        FILE="${destination}$db.$DOW"
+        DOW=$(date +%u)
+        curH=$(date +"%H")
+        FILE="${destination}$db.$DOW.$curH"
         # do all inone job in pipe,
         # connect to mysql using mysqldump for select mysql database
         # and pipe it out to gz file in backup dir :)
