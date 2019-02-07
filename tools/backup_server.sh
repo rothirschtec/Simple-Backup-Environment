@@ -6,17 +6,26 @@
 # You can copy your ssh key to the remote server if you want
 # backup_server.sh sshCopy
 
+set -euo pipefail
 
 # # #
 # "Dirs and vars"
-    cd $(dirname $0)
-    sdir="$PWD"
-    name=${sdir##*/}
-    sdir="${sdir}/"
-    cd ..
-    rdir="$PWD/"
-    error=false
+cd $(dirname $0)
+sdir="$PWD"
+name=${sdir##*/}
+sdir="${sdir}/"
+cd ..
+rdir="$PWD/"
+error=false
 # # #
+
+# # #
+# Load config
+if [ -f ${rdir}config.sh ]; then
+    source ${rdir}config
+else
+    source ${rdir}tools/config_example
+fi
 
 # # #
 # Initialize vars
@@ -131,17 +140,20 @@ if [ $BACKUP -eq 1 ]; then
                 mkdir -p ${bmdi}
 
                 # Get mySqlPort
-                myPort=$(myPort=$(cat tools/mysql.cnf |grep 'port='); echo $myPort |grep -oP "(?<=').*?(?=')";)
+                myPort=$(myPort=$(cat ${sdir}mysql.cnf |grep 'remoteport='); echo $myPort |grep -oP "(?<=').*?(?=')";)
 
-                ssh -o ServerAliveInterval=10 -M -T -M -N -L 3309:127.0.0.1:${myPort} ${USER}@${SERVER} &
+
+                ssh -p ${PORT} -o ServerAliveInterval=10 -M -T -M -N -L 3309:127.0.0.1:${myPort} ${USER}@${SERVER} 2>  ${sdir}err.log &
                 pid=$!
                 echo "Got pid $pid ..."
-                sleep 2
-                echo "backup..."
-              
-                # $1:mysql config file, $2:backupdir, $3:sendmail(1/0), $4:admin mail, $5:delete backups after 
-                /bin/bash ${rdir}tools/mysql-backup.sh "${sdir}mysql.cnf" "${bmdi}" "1" "$admin" "$BDAYS"
-               
+                if [ $(wc -c ${sdir}err.log | awk '{print $1}') -eq 0 ]; then
+                    sleep 2
+                    echo "backup..."
+                  
+                    # $1:mysql config file, $2:backupdir, $3:sendmail(1/0), $4:mail mail, $5:delete backups after 
+                    /bin/bash ${rdir}tools/mysql-backup.sh "${sdir}mysql.cnf" "${bmdi}" "$mail" "$sdir"
+                   
+                fi
                 echo "kill tunnel with $pid..."
                 kill -9 $pid
             fi
@@ -158,9 +170,8 @@ if [ $BACKUP -eq 1 ]; then
     # # #
     # End message
     if [[ $(cat ${sdir}err.log) != "" ]]; then
-        echo "Scripts stopped: $(date +"%y-%m-%d %H:%M")" >> ${sdir}err.log
-        source ${rdir}tools/mailtools.sh
-        mail2admin "$(cat ${sdir}err.log)" "Backup Problem!!!" "${name}|$(basename $0)"
+        echo "Script stopped: $(date +"%y-%m-%d %H:%M")" >> ${sdir}err.log
+        cat ${sdir}err.log | mail -s "Backup Problem!!! ${name}" $mail
     fi
     # # #
         

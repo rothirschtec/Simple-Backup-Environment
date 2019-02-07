@@ -14,5 +14,6 @@
 
 [client]
 user='!#mysqlUSER#!'
-port='!#mysqlPORT#!'
+port='3309'
 password='!#mysqlPASS#!'
+#remoteport='!#mysqlPORT#!'

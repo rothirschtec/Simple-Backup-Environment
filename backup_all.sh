@@ -2,6 +2,8 @@
 
 cd $(dirname $0)
 hdir="$PWD/"
+tdir="/tmp/SBE/$RANDOM/"
+mkdir -p $tdir
 
 if [ -f ${hdir}config.sh ]; then
     source ${hdir}config
@@ -23,7 +25,18 @@ do
             cat ${dir}/err.log | mail -s "[SBE] !!!ERROR!!! Backup error detected on host: $host" $mail
         fi
         if [[ "$@" =~ "--log" ]]; then
+
+            # Add disk space stats of backup filesystem
             cat ${dir}/bac.log | mail -s "[SBE] Backup log from host: $host" $mail
         fi
     fi
 done
+
+# # #
+# Send summary
+echo ""; echo "Backup of all instances done on $HOSTNAME"; echo "" > ${tdir}end.log
+/bin/df >> ${tdir}end.log
+cat ${tdir}end.log | mail -s "[SBE] All Backups done on host: $host" $mail
+
+rm -rf $tdir
+exit 0
