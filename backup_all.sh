@@ -36,7 +36,9 @@ done
 # Send summary
 echo ""; echo "Backup of all instances done on $HOSTNAME"; echo "" > ${tdir}end.log
 /bin/df >> ${tdir}end.log
-cat ${tdir}end.log | mail -s "[SBE] All Backups done on host: $host" $mail
+if [[ "$@" =~ "--log" ]]; then
+    cat ${tdir}end.log | mail -s "[SBE] All Backups done on host: $host" $mail
+fi
 
 rm -rf $tdir
 exit 0
