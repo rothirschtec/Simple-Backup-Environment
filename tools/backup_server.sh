@@ -20,7 +20,7 @@ error=false
 
 # # #
 # Load config
-if [ -f ${rdir}config.sh ]; then
+if [ -f ${rdir}config ]; then
     source ${rdir}config
 else
     source ${rdir}tools/config_example
