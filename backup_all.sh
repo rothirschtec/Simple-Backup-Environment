@@ -5,7 +5,7 @@ hdir="$PWD/"
 tdir="/tmp/SBE/$RANDOM/"
 mkdir -p $tdir
 
-if [ -f ${hdir}config.sh ]; then
+if [ -f ${hdir}config ]; then
     source ${hdir}config
 else
     source ${hdir}tools/config_example
