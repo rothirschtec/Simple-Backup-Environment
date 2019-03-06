@@ -1,7 +1,6 @@
 #!/bin/bash
 #
 # Main Task in Odoo: 
-# https://odoo.gasmotoren.company/web?debug=#id=1392&view_type=form&model=project.task&action=141&active_id=8
 #
 # You can copy your ssh key to the remote server if you want
 # backup_server.sh sshCopy
