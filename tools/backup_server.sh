@@ -106,7 +106,8 @@ if [ $BACKUP -eq 1 ]; then
                    
                 fi
                 echo "kill tunnel with $pid..."
-                kill -9 $pid
+		kill -9 $pid
+		wait $pid 2>/dev/null
             fi
 
             bdir="${sdir}rotate_bak/${BUCKET_TYPE}/${BUCKET}/"
