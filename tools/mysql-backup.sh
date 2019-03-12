@@ -31,6 +31,9 @@ NOTIFY_EMAIL=$3
 # $4 -> SBE location
 SBE_dir=$4
 
+# $5 -> delete days
+del_days=$5
+
 # Modify the variables below to your need
 
 
@@ -66,6 +69,7 @@ error_log="${SBE_dir}err.log"
 
 # Backup all existing databases
 DBS=$($MYSQL --defaults-file=$authFile -Bse "show databases" 2> $error_log)
+
 
 # Start backing up databases
 STARTTIME=$(date +%s)
@@ -105,6 +109,8 @@ do
 
 done
 
+# Delete old backups
+find ${destination} -mtime +$del_days -exec rm -fr {} \;
 
 echo "Backup script ended successfully"
 exit 0

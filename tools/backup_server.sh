@@ -6,7 +6,6 @@
 # backup_server.sh sshCopy
 
 set -euo pipefail
-
 # # #
 # "Dirs and vars"
 cd $(dirname $0)
@@ -102,7 +101,11 @@ if [ $BACKUP -eq 1 ]; then
                     echo "backup..."
                   
                     # $1:mysql config file, $2:backupdir, $3:sendmail(1/0), $4:mail mail, $5:delete backups after 
-                    /bin/bash ${rdir}tools/mysql-backup.sh "${sdir}mysql.cnf" "${bmdi}" "$mail" "$sdir"
+		    if [[ "$BUCKET_TYPE" == "weekly" ]]; then
+                    	/bin/bash ${rdir}tools/mysql-backup.sh "${sdir}mysql.cnf" "${bmdi}" "$mail" "$sdir" "$MBWEEKS"
+		    else
+                    	/bin/bash ${rdir}tools/mysql-backup.sh "${sdir}mysql.cnf" "${bmdi}" "$mail" "$sdir" "$MBDAYS"
+		    fi
                    
                 fi
                 echo "kill tunnel with $pid..."
