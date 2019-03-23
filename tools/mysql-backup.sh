@@ -58,7 +58,7 @@ NOTIFY_SUBJECT="${HOST}: MySQL Backup Notification ($DAY)"
 #DBS="mysql zarafa"
 
 # DO NOT BACKUP these databases
-IGGY="test performance_schema information_schema"
+IGGY="test performance_schema information_schema mysql"
 
 # mysqldump parameters
 DUMP_OPTS='-Q --skip-lock-tables --single-transaction --max_allowed_packet=1024M '
