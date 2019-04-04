@@ -19,13 +19,8 @@ do
 
         host="${dir##*/}"
         echo "Backup: $host"
-        bash "${dir}/backup_server.sh" $1
+        bash "${dir}/backup_server.sh" $@
 
-
-        if [[ "$@" =~ "--log" ]]; then
-            # Add disk space stats of backup filesystem
-            cat ${dir}/bac.log | mail -s "[SBE] Backup log from host: $host" $mail
-        fi
     fi
 done
 
