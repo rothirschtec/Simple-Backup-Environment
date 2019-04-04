@@ -64,8 +64,10 @@ IGGY="test performance_schema information_schema"
 DUMP_OPTS='-Q --skip-lock-tables --single-transaction --max_allowed_packet=1024M '
 
 # Temp Message file
-backup_log="${SBE_dir}bac.log"
-error_log="${SBE_dir}err.log"
+backup_log="${SBE_dir}mysql/mysql_bac.log"
+echo "" > $backup_log
+error_log="${SBE_dir}mysql/mysql_err.log"
+echo "" > $error_log
 
 # Backup all existing databases
 DBS=$($MYSQL --defaults-file=$authFile -Bse "show databases" 2> $error_log)

@@ -168,15 +168,24 @@ if [ $BACKUP -eq 1 ]; then
         ) > ${sdir}bac.log | tee ${rdir}all.log 2> ${sdir}err.log | tee ${rdir}all.log
         # # #
 
+        echo "# # #"                    >> ${sdir}bac.log
+        echo "# MYSQL Backups"          >> ${sdir}bac.log
+        echo ${sdir}mysql/mysql_bac.log >> ${sdir}bac.log
+
+        if [ -f ${sdir}mysql/mysql_err.log ]; then
+            echo ${sdir}mysql/mysql_err.log >> ${sdir}err.log
+        fi
+
 
     fi
 
     # # #
     # End message
-    if [[ $(cat ${sdir}err.log) != "" ]]; then
+    if [ $(cat ${sdir}err.log | wc -w | awk '{ print $1 }') -gt 0 ]; then
         echo "Script stopped: $(date +"%y-%m-%d %H:%M")" >> ${sdir}err.log
-        cat ${sdir}err.log | mail -s "Backup Problem!!! ${name}" $mail
+        cat ${sdir}err.log | mail -s "[SBE] !!!ERROR!!!, detected on host: $host" $mail
     fi
+        fi
     # # #
         
 fi # if $BACKUP -eq 1
