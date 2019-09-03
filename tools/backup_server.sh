@@ -6,7 +6,6 @@
 # backup_server.sh sshCopy
 
 set -euo pipefail
-
 # # #
 # "Dirs and vars"
 cd $(dirname $0)
@@ -79,6 +78,7 @@ if [ $BACKUP -eq 1 ]; then
             rm -f ${sdir}bac.log
         # # #
 
+        
         # # #
         # Backup process
         ( 
@@ -92,22 +92,25 @@ if [ $BACKUP -eq 1 ]; then
 
                 # Get mySqlPort
                 myPort=$(myPort=$(cat ${sdir}mysql.cnf |grep 'remoteport='); echo $myPort |grep -oP "(?<=').*?(?=')";)
+                mylocp=$(sed "s/'//g" <<<$(sed 's/port=//g' <<<$(cat ${sdir}mysql.cnf |grep '^port=')))
 
-
-                ssh -p ${PORT} -o ServerAliveInterval=10 -M -T -M -N -L 3309:127.0.0.1:${myPort} ${USER}@${SERVER} 2>  ${sdir}err.log &
+                ssh -p ${PORT} -o ServerAliveInterval=10 -M -T -M -N -L $mylocp:127.0.0.1:${myPort} ${USER}@${SERVER} 2>  ${sdir}err.log &
                 pid=$!
                 echo "Got pid $pid ..."
                 if [ $(wc -c ${sdir}err.log | awk '{print $1}') -eq 0 ]; then
                     sleep 2
                     echo "backup..."
-                  
                     # $1:mysql config file, $2:backupdir, $3:sendmail(1/0), $4:mail mail, $5:delete backups after 
-                    /bin/bash ${rdir}tools/mysql-backup.sh "${sdir}mysql.cnf" "${bmdi}" "$mail" "$sdir"
+                    if [[ "$BUCKET_TYPE" == "weekly" ]]; then
+                        /bin/bash ${rdir}tools/mysql-backup.sh "${sdir}mysql.cnf" "${bmdi}" "$mail" "$sdir" "$MBWEEKS"
+                    else
+                        /bin/bash ${rdir}tools/mysql-backup.sh "${sdir}mysql.cnf" "${bmdi}" "$mail" "$sdir" "$MBDAYS"
+                fi
                    
                 fi
                 echo "kill tunnel with $pid..."
-		kill -9 $pid
-		wait $pid 2>/dev/null
+                kill -9 $pid
+                wait $pid 2>/dev/null
             fi
 
             bdir="${sdir}rotate_bak/${BUCKET_TYPE}/${BUCKET}/"
@@ -165,14 +168,30 @@ if [ $BACKUP -eq 1 ]; then
         ) > ${sdir}bac.log | tee ${rdir}all.log 2> ${sdir}err.log | tee ${rdir}all.log
         # # #
 
+        if [ -f ${sdir}mysql/mysql_bac.log ]; then
+            echo ""                         >> ${sdir}bac.log
+            echo "# # #"                    >> ${sdir}bac.log
+            echo "# MYSQL Backups"          >> ${sdir}bac.log
+            echo ${sdir}mysql/mysql_bac.log >> ${sdir}bac.log
+        fi
+
+        if [ -f ${sdir}mysql/mysql_err.log ]; then
+            echo ${sdir}mysql/mysql_err.log >> ${sdir}err.log
+        fi
+
 
     fi
 
     # # #
     # End message
-    if [[ $(cat ${sdir}err.log) != "" ]]; then
+
+    if [[ "$@" =~ "--log" ]]; then
+        # Add disk space stats of backup filesystem
+        cat ${sdir}bac.log | mail -s "[SBE] Backup log from host: $name" $mail
+    fi
+    if [ $(cat ${sdir}err.log | wc -w | awk '{ print $1 }') -gt 0 ]; then
         echo "Script stopped: $(date +"%y-%m-%d %H:%M")" >> ${sdir}err.log
-        cat ${sdir}err.log | mail -s "Backup Problem!!! ${name}" $mail
+        cat ${sdir}err.log | mail -s "[SBE] !!!ERROR!!!, detected on host: $name" $mail
     fi
     # # #
         

@@ -19,26 +19,10 @@ do
 
         host="${dir##*/}"
         echo "Backup: $host"
-        bash "${dir}/backup_server.sh" $1
+        bash "${dir}/backup_server.sh" $@
 
-        if [ $(cat ${dir}/err.log | wc -w | awk '{ print $1 }') -gt 0 ]; then
-            cat ${dir}/err.log | mail -s "[SBE] !!!ERROR!!! Backup error detected on host: $host" $mail
-        fi
-        if [[ "$@" =~ "--log" ]]; then
-
-            # Add disk space stats of backup filesystem
-            cat ${dir}/bac.log | mail -s "[SBE] Backup log from host: $host" $mail
-        fi
     fi
 done
-
-# # #
-# Send summary
-echo ""; echo "Backup of all instances done on $HOSTNAME"; echo "" > ${tdir}end.log
-/bin/df >> ${tdir}end.log
-if [[ "$@" =~ "--log" ]]; then
-    cat ${tdir}end.log | mail -s "[SBE] All Backups done on host: $host" $mail
-fi
 
 rm -rf $tdir
 exit 0
