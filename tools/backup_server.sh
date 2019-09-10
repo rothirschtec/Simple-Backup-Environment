@@ -30,7 +30,7 @@ do
     if [ ! -f /tmp/SBE-query ]; then
         echo $$ >> /tmp/SBE-query
     else
-        if ! cat /tmp/SBE-query | grep $$; then
+        if ! cat /tmp/SBE-query | grep $$ &> /dev/null; then
             echo $$ >> /tmp/SBE-query
         fi
     fi
