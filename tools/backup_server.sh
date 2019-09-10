@@ -39,6 +39,7 @@ do
 
     sleep $(( st * 5 ))
 done
+echo "Is running..." > ${sdir}run
 
 # # #
 # Load config
@@ -217,5 +218,7 @@ if [ $BACKUP -eq 1 ]; then
         cat ${sdir}err.log | mail -s "[SBE] !!!ERROR!!!, detected on host: $name" $mail
     fi
     # # #
+
+    rm -f ${sdir}run
         
 fi # if $BACKUP -eq 1
