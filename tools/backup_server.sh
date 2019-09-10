@@ -21,7 +21,7 @@ error=false
 # # #
 # Wait 10 seconds for each existing backup process
 # To avoid heavy loads
-stmax=3
+stmax=2
 st=$(($stmax+1))
 rm -f ${sdir}run
 while [ "$st" -ge "$stmax" ]
