@@ -39,9 +39,9 @@ do
     while read runq
     do
         # Check if first in query exists
-        if ! ps -a | grep ''${query}'.*bash.*/backup_server.sh' &> /dev/null; then
-            sed -i "/^$runq$/d" /tmp/SBE-query
-        fi
+	if [ ! -e /proc/${runq} -a /proc/${runq}/exe ]; then
+      	    sed -i "/^$runq$/d" /tmp/SBE-query
+	fi
     done < /tmp/SBE-query
 
 
@@ -52,7 +52,7 @@ do
             # Check if first in query exists
             while read runq
             do
-                if ! ps -a | grep ''${runq}'.*bash.*/backup_server.sh' &> /dev/null; then
+		if [ ! -e /proc/${runq} -a /proc/${runq}/exe ]; then
                     sed -i "/^$runq$/d" /tmp/SBE-query-run
                 fi
             done < /tmp/SBE-query-run
@@ -68,13 +68,8 @@ do
     fi
 
 done
-echo "${sdir}run with id: $$ is running"
-echo "Is running..." > ${sdir}run
+
 echo $$ >> /tmp/SBE-query-run
-
-
-sleep 60
-exit 0
 
 # # #
 # Load config
