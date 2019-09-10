@@ -43,7 +43,6 @@ do
         sed -i '1d' /tmp/SBE-query
     else 
 
-        sleep 5
 
         # End loop if st is less than 3
         if [[ $query == $$ ]]; then
@@ -65,6 +64,8 @@ do
             fi
         fi
     fi
+
+    sleep $(( $(cat /tmp/SBE-query | wc -l) * 5 ))
 
 done
 echo "Is running..." > ${sdir}run
