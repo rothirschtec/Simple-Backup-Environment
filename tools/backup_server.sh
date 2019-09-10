@@ -23,9 +23,11 @@ error=false
 # To avoid heavy loads
 stmax=3
 st=$(($stmax+1))
+rm -f ${sdir}run
 echo $$ >> /tmp/SBE-query
 while [ "$st" -gt "$stmax" ]
 do
+
 
     query=$(head -1 /tmp/SBE-query);
     # Check if first in query exists
@@ -39,16 +41,29 @@ do
 
         # End loop if st is less than 3
         if [[ $query == $$ ]]; then
-            st=$(ps -ef | grep "bash.*/backup_server.sh" | wc -l)
-            st=$(($st-3))
+            if [ -f /tmp/SBE-query-run ]; then
+
+                # Check if first in query exists
+                while read runq
+                do
+                    if ! ps -p $runq &> /dev/null; then
+                        sed -i "/^$runq$/d" /tmp/SBE-query-run
+                    elif ! ps -ax | grep '^'${runq}'.*bash.*/backup_server.sh' &> /dev/null; then
+                        sed -i "/^$runq$/d" /tmp/SBE-query-run
+                    fi
+                done < /tmp/SBE-query-run
+                st=$(cat /tmp/SBE-query-run | wc -l)
+
+            else
+                st=1
+            fi
         fi
     fi
 
 done
 echo "Is running..." > ${sdir}run
-echo ${sdir}run
+echo $$ >> /tmp/SBE-query-run
 
-exit 0
 # # #
 # Load config
 if [ -f ${rdir}config ]; then
@@ -227,6 +242,7 @@ if [ $BACKUP -eq 1 ]; then
     fi
     # # #
 
+    sed -i "/^$$$/d" /tmp/SBE-query-run
     rm -f ${sdir}run
         
 fi # if $BACKUP -eq 1
