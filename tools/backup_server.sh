@@ -27,8 +27,14 @@ rm -f ${sdir}run
 while [ "$st" -gt "$stmax" ]
 do
 
+    if [ ! -f /tmp/SBE-query ]; then
+        echo $$ >> /tmp/SBE-query
+    else
+        if ! cat /tmp/SBE-query | grep $$; then
+            echo $$ >> /tmp/SBE-query
+        fi
+    fi
 
-    echo $$ >> /tmp/SBE-query
     query=$(head -1 /tmp/SBE-query);
     # Check if first in query exists
     if ! ps -p $query &> /dev/null; then
