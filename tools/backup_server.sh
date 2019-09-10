@@ -21,26 +21,34 @@ error=false
 # # #
 # Wait 10 seconds for each existing backup process
 # To avoid heavy loads
-st=4
+stmax=3
+st=$(($stmax+1))
 echo $$ >> /tmp/SBE-query
-while [ "$st" -gt "3" ]
+while [ "$st" -gt "$stmax" ]
 do
 
-    # End loop if st is less than 3
-    if [[ $(head -1 /tmp/SBE-query) == $$ ]]; then
-        st=$(ps -ef | grep "bash.*/backup_server.sh" | wc -l)
-        let "st=st-3"
-    fi
-
+    query=$(head -1 /tmp/SBE-query);
     # Check if first in query exists
-    if ! ps -p $(head -1 /tmp/SBE-query); then
+    if ! ps -p $query &> /dev/null; then
         sed -i '1d' /tmp/SBE-query
+    elif ! ps -ax | grep '^'${query}'.*bash.*/backup_server.sh' &> /dev/null; then
+        sed -i '1d' /tmp/SBE-query
+    else 
+
+        sleep 5
+
+        # End loop if st is less than 3
+        if [[ $query == $$ ]]; then
+            st=$(ps -ef | grep "bash.*/backup_server.sh" | wc -l)
+            st=$(($st-3))
+        fi
     fi
 
-    sleep $(( st * 5 ))
 done
 echo "Is running..." > ${sdir}run
+echo ${sdir}run
 
+exit 0
 # # #
 # Load config
 if [ -f ${rdir}config ]; then
