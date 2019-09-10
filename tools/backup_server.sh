@@ -21,10 +21,13 @@ error=false
 # # #
 # Wait 10 seconds for each existing backup process
 # To avoid heavy loads
-st=$(ps -ef | grep "bash.*/backup_server.sh" | wc -l)
-let "st=st-3"
-sleep $(( st * 10 ))
-
+st=4
+while [ "$st" -gt "3" ]
+do
+    st=$(ps -ef | grep "bash.*/backup_server.sh" | wc -l)
+    let "st=st-3"
+    sleep $(( st * 10 ))
+done
 
 # # #
 # Load config
