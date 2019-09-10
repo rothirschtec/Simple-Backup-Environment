@@ -51,7 +51,6 @@ do
     if [[ $query == $$ ]]; then
         if [ -f /tmp/SBE-query-run ]; then
 
-		echo "hui"
             # Check if first in query exists
             while read runq
             do
