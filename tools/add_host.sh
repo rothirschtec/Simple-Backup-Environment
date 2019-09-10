@@ -30,7 +30,7 @@ cd ..
 hdir="$PWD/"
 
 echo
-echo 'Change the ssh config on your remote server'
+echo 'Change the ssh config on your remote host'
 echo ' - PermitRootLogin yes'
 echo ' - PasswordAuthentication yes'
 read -p 'Approve if done [Enter]'
