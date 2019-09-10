@@ -36,38 +36,43 @@ do
     fi
 
     query=$(head -1 /tmp/SBE-query);
-    # Check if first in query exists
-    if ! ps -p $query &> /dev/null; then
-        sed -i '1d' /tmp/SBE-query
-    elif ! ps -ax | grep '^'${query}'.*bash.*/backup_server.sh' &> /dev/null; then
-        sed -i '1d' /tmp/SBE-query
-    else 
+    while read runq
+    do
+        # Check if first in query exists
+        if ! ps -p $query &> /dev/null; then
+            sed -i "/^$runq$/d" /tmp/SBE-query
+        elif ! ps -ax | grep '^'${query}'.*bash.*/backup_server.sh' &> /dev/null; then
+            sed -i "/^$runq$/d" /tmp/SBE-query
+        fi
+    done < /tmp/SBE-query
 
 
-        # End loop if st is less than 3
-        if [[ $query == $$ ]]; then
-            if [ -f /tmp/SBE-query-run ]; then
+    # End loop if st is less than 3
+    if [[ $query == $$ ]]; then
+        if [ -f /tmp/SBE-query-run ]; then
 
-                # Check if first in query exists
-                while read runq
-                do
-                    if ! ps -p $runq &> /dev/null; then
-                        sed -i "/^$runq$/d" /tmp/SBE-query-run
-                    elif ! ps -ax | grep '^'${runq}'.*bash.*/backup_server.sh' &> /dev/null; then
-                        sed -i "/^$runq$/d" /tmp/SBE-query-run
-                    fi
-                done < /tmp/SBE-query-run
-                st=$(cat /tmp/SBE-query-run | wc -l)
+            # Check if first in query exists
+            while read runq
+            do
+                if ! ps -p $runq &> /dev/null; then
+                    sed -i "/^$runq$/d" /tmp/SBE-query-run
+                elif ! ps -ax | grep '^'${runq}'.*bash.*/backup_server.sh' &> /dev/null; then
+                    sed -i "/^$runq$/d" /tmp/SBE-query-run
+                fi
+            done < /tmp/SBE-query-run
+            st=$(cat /tmp/SBE-query-run | wc -l)
 
-            else
-                st=1
-            fi
+        else
+            st=1
         fi
     fi
 
-    sleep $(( $(cat /tmp/SBE-query | wc -l) * 5 ))
+    if [ $st -gt $stmax ]; then
+        sleep $(( $(cat /tmp/SBE-query | wc -l) * 2 ))
+    fi
 
 done
+echo "${sdir}run with id: $$ is running"
 echo "Is running..." > ${sdir}run
 echo $$ >> /tmp/SBE-query-run
 
@@ -218,6 +223,7 @@ if [ $BACKUP -eq 1 ]; then
             # # #
 
             echo "Successfull backup: $(date +"%y-%m-%d %H:%M")"
+            rm -f ${sdir}run
 
         ) > ${sdir}bac.log | tee ${rdir}all.log 2> ${sdir}err.log | tee ${rdir}all.log
         # # #
@@ -249,7 +255,5 @@ if [ $BACKUP -eq 1 ]; then
     fi
     # # #
 
-    sed -i "/^$$$/d" /tmp/SBE-query-run
-    rm -f ${sdir}run
         
 fi # if $BACKUP -eq 1
