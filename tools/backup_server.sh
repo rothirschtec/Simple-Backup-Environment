@@ -21,10 +21,11 @@ error=false
 # # #
 # Wait 10 seconds for each existing backup process
 # To avoid heavy loads
-stmax=3
+stmax=2
 st=$(($stmax+1))
+sti=1
 rm -f ${sdir}run
-while [ "$st" -gt "$stmax" ]
+while [ "$st" -ge "$stmax" ]
 do
 
     if [ ! -f /tmp/SBE-query ]; then
@@ -35,15 +36,14 @@ do
         fi
     fi
 
-    query=$(head -1 /tmp/SBE-query);
+    query=$(sed -n ${sti}p /tmp/SBE-query);
+	((sti++))
     while read runq
     do
         # Check if first in query exists
-        if ! ps -p $query &> /dev/null; then
-            sed -i "/^$runq$/d" /tmp/SBE-query
-        elif ! ps -ax | grep '^'${query}'.*bash.*/backup_server.sh' &> /dev/null; then
-            sed -i "/^$runq$/d" /tmp/SBE-query
-        fi
+	if [ ! -e /proc/${runq} -a /proc/${runq}/exe ]; then
+      	    sed -i "/^$runq$/d" /tmp/SBE-query
+	fi
     done < /tmp/SBE-query
 
 
@@ -54,9 +54,7 @@ do
             # Check if first in query exists
             while read runq
             do
-                if ! ps -p $runq &> /dev/null; then
-                    sed -i "/^$runq$/d" /tmp/SBE-query-run
-                elif ! ps -ax | grep '^'${runq}'.*bash.*/backup_server.sh' &> /dev/null; then
+		if [ ! -e /proc/${runq} -a /proc/${runq}/exe ]; then
                     sed -i "/^$runq$/d" /tmp/SBE-query-run
                 fi
             done < /tmp/SBE-query-run
@@ -67,13 +65,12 @@ do
         fi
     fi
 
-    if [ $st -gt $stmax ]; then
+    if [ $st -ge $stmax ]; then
         sleep $(( $(cat /tmp/SBE-query | wc -l) * 2 ))
     fi
 
 done
-echo "${sdir}run with id: $$ is running"
-echo "Is running..." > ${sdir}run
+
 echo $$ >> /tmp/SBE-query-run
 
 # # #
