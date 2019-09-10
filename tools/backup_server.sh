@@ -17,6 +17,15 @@ rdir="$PWD/"
 error=false
 # # #
 
+
+# # #
+# Wait 10 seconds for each existing backup process
+# To avoid heavy loads
+st=$(ps -ef | grep "bash.*/backup_server.sh" | wc -l)
+let "st=st-3"
+sleep $(( st * 10 ))
+
+
 # # #
 # Load config
 if [ -f ${rdir}config ]; then
