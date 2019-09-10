@@ -24,11 +24,11 @@ error=false
 stmax=3
 st=$(($stmax+1))
 rm -f ${sdir}run
-echo $$ >> /tmp/SBE-query
 while [ "$st" -gt "$stmax" ]
 do
 
 
+    echo $$ >> /tmp/SBE-query
     query=$(head -1 /tmp/SBE-query);
     # Check if first in query exists
     if ! ps -p $query &> /dev/null; then
