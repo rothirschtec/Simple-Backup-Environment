@@ -19,7 +19,20 @@ do
 
         host="${dir##*/}"
         echo "Backup: $host"
-        bash "${dir}/backup_server.sh" $@
+
+        echo "0" > ${dir}/run
+        ps -ef | grep bash | while read psLine; do
+                if [[ $psLine == *"${host}/backup_server.sh"* ]]; then
+                    echo 1 > ${dir}/run
+                fi
+        done
+
+        if [ $(cat ${dir}/run) -eq 0 ]; then
+                echo "Starting backup for $host..."
+                bash "${dir}/backup_server.sh" $@ &
+        else
+                echo "Backup for $host under way..."
+        fi
 
     fi
 done
