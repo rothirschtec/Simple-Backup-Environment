@@ -17,6 +17,65 @@ rdir="$PWD/"
 error=false
 # # #
 
+
+# # #
+# Wait 10 seconds for each existing backup process
+# To avoid heavy loads
+stmax=3
+st=$(($stmax+1))
+rm -f ${sdir}run
+while [ "$st" -gt "$stmax" ]
+do
+
+    if [ ! -f /tmp/SBE-query ]; then
+        echo $$ >> /tmp/SBE-query
+    else
+        if ! cat /tmp/SBE-query | grep $$ &> /dev/null; then
+            echo $$ >> /tmp/SBE-query
+        fi
+    fi
+
+    query=$(head -1 /tmp/SBE-query);
+    while read runq
+    do
+        # Check if first in query exists
+        if ! ps -p $query &> /dev/null; then
+            sed -i "/^$runq$/d" /tmp/SBE-query
+        elif ! ps -ax | grep '^'${query}'.*bash.*/backup_server.sh' &> /dev/null; then
+            sed -i "/^$runq$/d" /tmp/SBE-query
+        fi
+    done < /tmp/SBE-query
+
+
+    # End loop if st is less than 3
+    if [[ $query == $$ ]]; then
+        if [ -f /tmp/SBE-query-run ]; then
+
+            # Check if first in query exists
+            while read runq
+            do
+                if ! ps -p $runq &> /dev/null; then
+                    sed -i "/^$runq$/d" /tmp/SBE-query-run
+                elif ! ps -ax | grep '^'${runq}'.*bash.*/backup_server.sh' &> /dev/null; then
+                    sed -i "/^$runq$/d" /tmp/SBE-query-run
+                fi
+            done < /tmp/SBE-query-run
+            st=$(cat /tmp/SBE-query-run | wc -l)
+
+        else
+            st=1
+        fi
+    fi
+
+    if [ $st -gt $stmax ]; then
+        sleep $(( $(cat /tmp/SBE-query | wc -l) * 2 ))
+    fi
+
+done
+echo "${sdir}run with id: $$ is running"
+echo "Is running..." > ${sdir}run
+echo $$ >> /tmp/SBE-query-run
+
 # # #
 # Load config
 if [ -f ${rdir}config ]; then
@@ -164,6 +223,7 @@ if [ $BACKUP -eq 1 ]; then
             # # #
 
             echo "Successfull backup: $(date +"%y-%m-%d %H:%M")"
+            rm -f ${sdir}run
 
         ) > ${sdir}bac.log | tee ${rdir}all.log 2> ${sdir}err.log | tee ${rdir}all.log
         # # #
@@ -194,5 +254,6 @@ if [ $BACKUP -eq 1 ]; then
         cat ${sdir}err.log | mail -s "[SBE] !!!ERROR!!!, detected on host: $name" $mail
     fi
     # # #
+
         
 fi # if $BACKUP -eq 1
