@@ -22,11 +22,22 @@ error=false
 # Wait 10 seconds for each existing backup process
 # To avoid heavy loads
 st=4
+echo $$ >> /tmp/SBE-query
 while [ "$st" -gt "3" ]
 do
-    st=$(ps -ef | grep "bash.*/backup_server.sh" | wc -l)
-    let "st=st-3"
-    sleep $(( st * 10 ))
+
+    # End loop if st is less than 3
+    if [[ $(head -1 /tmp/SBE-query) == $$ ]]; then
+        st=$(ps -ef | grep "bash.*/backup_server.sh" | wc -l)
+        let "st=st-3"
+    fi
+
+    # Check if first in query exists
+    if ! ps -p $(head -1 /tmp/SBE-query); then
+        sed -i '1d' /tmp/SBE-query
+    fi
+
+    sleep $(( st * 5 ))
 done
 
 # # #
