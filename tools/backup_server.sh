@@ -24,7 +24,7 @@ error=false
 stmax=3
 st=$(($stmax+1))
 rm -f ${sdir}run
-while [ "$st" -gt "$stmax" ]
+while [ "$st" -ge "$stmax" ]
 do
 
     if [ ! -f /tmp/SBE-query ]; then
@@ -67,7 +67,7 @@ do
         fi
     fi
 
-    if [ $st -gt $stmax ]; then
+    if [ $st -ge $stmax ]; then
         sleep $(( $(cat /tmp/SBE-query | wc -l) * 2 ))
     fi
 
