@@ -2,7 +2,7 @@
 
 # Checks dependencies and tries to install them
 installed=0
-dep=("mysql-client" "mysql-server" "mailutils" "pwgen" "cstream")
+dep=("mysql-client" "mailutils" "pwgen" "cstream")
 for x in "${dep[@]}"; do
     dpkg -s $x &> /dev/null
     if [ $? -eq 1 ]; then
@@ -30,7 +30,7 @@ cd ..
 hdir="$PWD/"
 
 echo
-echo 'Change the ssh config on your remote server'
+echo 'Change the ssh config on your remote host'
 echo ' - PermitRootLogin yes'
 echo ' - PasswordAuthentication yes'
 read -p 'Approve if done [Enter]'
