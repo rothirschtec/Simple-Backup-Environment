@@ -23,6 +23,7 @@ error=false
 # To avoid heavy loads
 stmax=2
 st=$(($stmax+1))
+sti=1
 rm -f ${sdir}run
 while [ "$st" -ge "$stmax" ]
 do
@@ -35,7 +36,8 @@ do
         fi
     fi
 
-    query=$(head -1 /tmp/SBE-query);
+    query=$(sed -n ${sti}p /tmp/SBE-query);
+	((sti++))
     while read runq
     do
         # Check if first in query exists
@@ -49,6 +51,7 @@ do
     if [[ $query == $$ ]]; then
         if [ -f /tmp/SBE-query-run ]; then
 
+		echo "hui"
             # Check if first in query exists
             while read runq
             do
