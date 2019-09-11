@@ -1,7 +1,5 @@
 #!/bin/bash
 #
-# Main Task in Odoo: 
-#
 # You can copy your ssh key to the remote server if you want
 # backup_server.sh sshCopy
 
@@ -240,18 +238,19 @@ if [ $BACKUP -eq 1 ]; then
 
     fi
 
-    # # #
-    # End message
 
+    # End message
     if [[ "$@" =~ "--log" ]]; then
         # Add disk space stats of backup filesystem
-        cat ${sdir}bac.log | mail -s "[SBE] Backup log from host: $name" $mail
+        echo -e "Subject: Backup Success on $HOST\n\n $(cat ${sdir}bac.log)" | sendmail rene@rothirsch.tech
+
     fi
     if [ $(cat ${sdir}err.log | wc -w | awk '{ print $1 }') -gt 0 ]; then
         echo "Script stopped: $(date +"%y-%m-%d %H:%M")" >> ${sdir}err.log
-        cat ${sdir}err.log | mail -s "[SBE] !!!ERROR!!!, detected on host: $name" $mail
+        echo -e "Subject: Backup Error on $HOST\n\n $(cat ${sdir}err.log)" | sendmail rene@rothirsch.tech
     fi
     # # #
+
 
         
 fi # if $BACKUP -eq 1
