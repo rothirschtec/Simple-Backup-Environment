@@ -5,9 +5,11 @@ hdir="$PWD/"
 tdir="/tmp/SBE/$RANDOM/"
 mkdir -p $tdir
 
-echo "Getting latest version"
-git pull &> /dev/null
-bash ${hdir}tools/update_scripts.sh &> /dev/null
+function getlatest() {
+    echo "Getting latest version"
+    git pull &> /dev/null
+    bash ${hdir}tools/update_scripts.sh &> /dev/null
+}
 
 if [ -f ${hdir}config ]; then
     source ${hdir}config
@@ -29,11 +31,13 @@ do
             if  [[ $@ =~ "--weekly" ]] && \
                 [ $(ps -w | grep "bash.*${host}/backup_server.sh.*--weekly" | wc -l) -eq 1 ]; then
                 echo "Starting daily backup for $host..."
+                getlatest
                 bash "${dir}/backup_server.sh" $@ &
 
             elif [[ $@ =~ "--daily" ]] && \
                  [ $(ps -w | grep "bash.*${host}/backup_server.sh.*--daily" | wc -l) -eq 1 ]; then
                 echo "Starting daily backup for $host..."
+                getlatest
                 bash "${dir}/backup_server.sh" $@ &
 
             else
@@ -44,11 +48,13 @@ do
             if  [[ $@ =~ "--weekly" ]] && \
                 [ $(ps -ef | grep "bash.*${host}/backup_server.sh.*--weekly" | wc -l) -eq 1 ]; then
                 echo "Starting weekly backup for $host..."
+                getlatest
                 bash "${dir}/backup_server.sh" $@ &
 
             elif [[ $@ =~ "--daily" ]] && \
                  [ $(ps -ef | grep "bash.*${host}/backup_server.sh.*--daily" | wc -l) -eq 1 ]; then
                 echo "Starting daily backup for $host..."
+                getlatest
                 bash "${dir}/backup_server.sh" $@ &
 
             else
