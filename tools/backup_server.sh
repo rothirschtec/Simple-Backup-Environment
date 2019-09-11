@@ -66,7 +66,8 @@ do
     fi
 
     if [ $st -ge $stmax ]; then
-        sleep $(( $(cat /tmp/SBE-query | wc -l) * 2 ))
+        #sleep $(( $(cat /tmp/SBE-query | wc -l) * 2 ))
+        sleep 1
     fi
 
 done
