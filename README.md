@@ -15,16 +15,18 @@ Start with
 You have to install the dependencies asked. Better explanations coming soon.
 
 ## qnap
-You can use this script on a qnap NAS. Connect to the NAS via SSH.
-You'll need git installed on the qnap NAS. You have to install qpkg via the app store.
-Now you can build the entware package.
+You can use this script on a qnap NAS. Connect to the NAS via SSH. You'll need git installed on the qnap NAS.
+Therfore you can install qpkg via the app store to be able to build the entware package.
 
 	cd /share/Public
-	#Download the Entware-3x QPKG:
+
+	# Download the Entware-3x QPKG:
 	wget --no-check-certificate "http://entware-3x.zyxmon.org/binaries/other/Entware-3x_0.99std.qpkg"
-	#
+
+	# Install Entware via script
 	sh Entware-3x_0.99std.qpkg
-	# Logout in Login agani
+
+	# Logout in Login again
 	# Check that it updates correctly:
 	opkg update
 	opkg install git git-http
