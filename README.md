@@ -27,4 +27,4 @@ Now you can build the entware package.
 	# Logout in Login agani
 	# Check that it updates correctly:
 	opkg update
-	opkg install ssh
+	opkg install git git-http
