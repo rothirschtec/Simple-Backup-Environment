@@ -47,7 +47,7 @@ You can add a crontab to execute the script, here are a few examples:
 	*/5 8-22 * * * bash <PathToRT-Blog-SBE>/backup_all.sh --daily
 
 	# Each sunday, you will create a weekly backup *--weekly* and send a mail *--log* to the admin
-	0 20 * * 7 bash /media/4tb2/RT-Blog-SBE-continously/backup_all.sh --weekly --log
+	0 20 * * 7 bash <PathToRT-Blog-SBE>/backup_all.sh --weekly --log
 
 ## qNap crontab
 On a qNap NAS you have to add the cron tasks inside _/etc/config/crontab_ and reload crontab after it
