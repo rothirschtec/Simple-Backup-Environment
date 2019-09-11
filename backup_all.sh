@@ -32,7 +32,7 @@ do
                 bash "${dir}/backup_server.sh" $@ &
 
             elif [[ $@ =~ "--daily" ]] && \
-                 [ $(ps -ef | grep "bash.*${host}/backup_server.sh.*--daily" | wc -l) -eq 1 ]; then
+                 [ $(ps -w | grep "bash.*${host}/backup_server.sh.*--daily" | wc -l) -eq 1 ]; then
                 echo "Starting daily backup for $host..."
                 bash "${dir}/backup_server.sh" $@ &
 
