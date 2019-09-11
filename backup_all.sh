@@ -7,8 +7,8 @@ mkdir -p $tdir
 
 function getlatest() {
     echo "Getting latest version"
-    git pull &> /dev/null
-    bash ${hdir}tools/update_scripts.sh &> /dev/null
+    git pull
+    bash ${hdir}tools/update_scripts.sh
 }
 
 if [ -f ${hdir}config ]; then
