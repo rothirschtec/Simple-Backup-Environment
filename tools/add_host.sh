@@ -1,24 +1,5 @@
 #!/bin/bash
 
-# Checks dependencies and tries to install them
-installed=0
-dep=("mysql-client" "mailutils" "pwgen" "cstream")
-for x in "${dep[@]}"; do
-    dpkg -s $x &> /dev/null
-    if [ $? -eq 1 ]; then
-        echo "$x: is not installed"
-        read -p "The package '$x' is needed. Should I install it? (yN): " install
-        if [[ $install == [yY] ]]; then
-            apt-get install $x
-            installed=1
-	else
-		echo ""; echo "Sorry but you have to install the dependencies at least"
-		exit 1
-        fi
-    fi
-done
-# # #
-
 read -p "HostName: " sname
 read -p "User: " suser
 read -p "Server IP Adress: " sip
@@ -55,7 +36,11 @@ sed -i 's/!#User#!/'$suser'/g'          ${bacfol}server.config
 # mariadb
 if [[ $mysqlIF == "true" ]]; then 
 
-    mPa="$(pwgen -c -n -y -B -1 24 | tr '`"' '$@')"
+    if pwgen &> /dev/null; then 
+    	mPa="$(pwgen -c -n -y -B -1 24 | tr '`"' '$@')"
+    else
+    	mPa="ThisIsNotAStrongPassword"
+    fi
     echo
     echo 'Create an user on the mysql server'
     echo 'bash: mysql -u root -p'

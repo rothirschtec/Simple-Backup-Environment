@@ -12,7 +12,15 @@ Start with
 
     sudo ./tools/add_host.sh
 
-You have to install the dependencies asked.
+## Dependencies
+
+- ssh
+- rsync
+
+### Optional
+- pwgen
+- mysql-client or mariadb-client
+
 
 ## qnap
 You can use this script on a qnap NAS. Connect to the NAS via SSH. You'll need git installed on the qnap NAS.
@@ -30,6 +38,8 @@ Therfore you can install qpkg via the app store to be able to build the entware 
 	# Check that it updates correctly:
 	opkg update
 	opkg install git git-http
+	# If needed
+	opkg install mariadb-client
 
 And don't forget to set your e-mail settings in qnap control panel. *ControlPanel > Notification Center > Service Account and Device Pairing > E-mail > Add SMPT Service*
 
