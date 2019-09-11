@@ -6,8 +6,8 @@ tdir="/tmp/SBE/$RANDOM/"
 mkdir -p $tdir
 
 echo "Getting latest version"
-git pull
-bash ${hdir}tools/update_scripts.sh
+git pull &> /dev/null
+bash ${hdir}tools/update_scripts.sh &> /dev/null
 
 if [ -f ${hdir}config ]; then
     source ${hdir}config
