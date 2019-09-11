@@ -41,6 +41,7 @@ do
         # Check if first in query exists
 	if [ ! -e /proc/${runq} -a /proc/${runq}/exe ]; then
       	    sed -i "/^$runq$/d" /tmp/SBE-query
+	    sed -i '/^$/d' /tmp/SBE-query-run
 	fi
     done < /tmp/SBE-query
 
@@ -54,6 +55,7 @@ do
             do
 		if [ ! -e /proc/${runq} -a /proc/${runq}/exe ]; then
                     sed -i "/^$runq$/d" /tmp/SBE-query-run
+		    sed -i '/^$/d' /tmp/SBE-query-run
                 fi
             done < /tmp/SBE-query-run
             st=$(cat /tmp/SBE-query-run | wc -l)
