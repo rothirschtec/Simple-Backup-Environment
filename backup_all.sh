@@ -24,23 +24,37 @@ do
         host="${dir##*/}"
         echo "Backup: $host"
 
-	if [[ $MACHTYPE == x86_64-QNAP-linux-gnu ]]; then
-		if [ $(ps -w | grep "bash.*${host}/backup_server.sh" | wc -l) -eq 1 ]; then
-		    echo "Starting backup for $host..."
-		    bash "${dir}/backup_server.sh" $@ &
-		else
-		    echo "Backup for $host under way..."
-		fi
+        if [[ $MACHTYPE == x86_64-QNAP-linux-gnu ]]; then
 
-	else
-		if [ $(ps -ef | grep "bash.*${host}/backup_server.sh" | wc -l) -eq 1 ]; then
-		    echo "Starting backup for $host..."
-		    bash "${dir}/backup_server.sh" $@ &
-		else
-		    echo "Backup for $host under way..."
-		fi
-	fi
+            if  [[ $@ =~ "--weekly" ]] && \
+                [ $(ps -w | grep "bash.*${host}/backup_server.sh.*--weekly" | wc -l) -eq 1 ]; then
+                echo "Starting daily backup for $host..."
+                bash "${dir}/backup_server.sh" $@ &
 
+            elif [[ $@ =~ "--daily" ]] && \
+                 [ $(ps -w | grep "bash.*${host}/backup_server.sh.*--daily" | wc -l) -eq 1 ]; then
+                echo "Starting daily backup for $host..."
+                bash "${dir}/backup_server.sh" $@ &
+
+            else
+                echo "Backup for $host under way..."
+            fi
+
+        else
+            if  [[ $@ =~ "--weekly" ]] && \
+                [ $(ps -ef | grep "bash.*${host}/backup_server.sh.*--weekly" | wc -l) -eq 1 ]; then
+                echo "Starting weekly backup for $host..."
+                bash "${dir}/backup_server.sh" $@ &
+
+            elif [[ $@ =~ "--daily" ]] && \
+                 [ $(ps -ef | grep "bash.*${host}/backup_server.sh.*--daily" | wc -l) -eq 1 ]; then
+                echo "Starting daily backup for $host..."
+                bash "${dir}/backup_server.sh" $@ &
+
+            else
+                echo "Backup for $host under way..."
+            fi
+        fi
     fi
 done
 
