@@ -38,8 +38,8 @@ Therfore you can install qpkg via the app store to be able to build the entware 
 	# Check that it updates correctly:
 	opkg update
 	opkg install git git-http grep
-	# If needed
-	opkg install mariadb-client
+	# If mysql database backups are needed
+	opkg install mariadb-client mariadb-client-extra
 
 And don't forget to set your e-mail settings in qnap control panel. *ControlPanel > Notification Center > Service Account and Device Pairing > E-mail > Add SMPT Service*
 
