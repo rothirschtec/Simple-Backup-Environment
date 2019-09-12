@@ -37,7 +37,7 @@ Therfore you can install qpkg via the app store to be able to build the entware 
 	# Logout in Login again
 	# Check that it updates correctly:
 	opkg update
-	opkg install git git-http
+	opkg install git git-http grep
 	# If needed
 	opkg install mariadb-client
 
