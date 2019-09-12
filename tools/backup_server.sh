@@ -184,7 +184,7 @@ if [ $BACKUP -eq 1 ]; then
 
                echo "Rsync Backup"
                rsync -e "ssh -p ${PORT}" "${roption[@]}" ${USER}@${SERVER}:${SHARE} ${bdir}
-               for radd in "${rsyncadd[@]}"
+               [[ -v rsyncadd[@] ]] && for radd in "${rsyncadd[@]}"
                do
                   eval ${radd}
                done
@@ -208,7 +208,7 @@ if [ $BACKUP -eq 1 ]; then
                echo "Tar Archive Backup"
                mkdir -p ${sdir}archive/
                ssh -p ${PORT} ${USER}@${SERVER} tar czf - ${SHARE} > ${sdir}archive/file.tar.gz
-               for radd in "${rsyncadd[@]}"
+               [[ -v rsyncadd[@] ]] && for radd in "${rsyncadd[@]}"
                do
                   eval ${radd}
                done
