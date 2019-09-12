@@ -25,14 +25,11 @@ authFile=$1
 # Backup Dest directory, change this if you have someother location
 destination=$2
 
-# $3 -> notifymail
-NOTIFY_EMAIL=$3
-
 # $4 -> SBE location
-SBE_dir=$4
+SBE_dir=$3
 
 # $5 -> delete days
-del_days=$5
+del_days=$4
 
 # Modify the variables below to your need
 
@@ -44,15 +41,11 @@ GREP="$(which grep)"
 CHOWN="$(which chown)"
 CHMOD="$(which chmod)"
 GZIP="$(which gzip)"
-MAIL="$(which sendmail)"
 FIND="$(which find)"
 DF="$(which df)"
 
 # Get hostname
 HOST="$(hostname)"
-
-# Send Result EMail
-NOTIFY_SUBJECT="${HOST}: MySQL Backup Notification ($DAY)"
 
 # Or specify which databases to backup
 #DBS="mysql zarafa"
