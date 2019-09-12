@@ -26,53 +26,55 @@ rm -f ${sdir}run
 while [ "$st" -ge "$stmax" ]
 do
 
-    if [ ! -f /tmp/SBE-query ]; then
-        echo $$ >> /tmp/SBE-query
+    if [ ! -f /tmp/SBE-queue ]; then
+        echo "$$; $(date); ${name};" >> /tmp/SBE-queue
     else
-        if ! cat /tmp/SBE-query | grep $$ &> /dev/null; then
-            echo $$ >> /tmp/SBE-query
+        if ! cat /tmp/SBE-queue | grep $$ &> /dev/null; then
+            echo "$$; $(date); ${name};" >> /tmp/SBE-queue
         fi
     fi
 
-    query=$(sed -n ${sti}p /tmp/SBE-query);
-	((sti++))
-    while read runq
+    queue=$(sed -n $(($(cat /tmp/SBE-queue-run | wc -l) + 1))p /tmp/SBE-queue);
+
+    # Check if first to $stmax in queue exists
+    while read rline
     do
-        # Check if first in query exists
-	if [ ! -e /proc/${runq} -a /proc/${runq}/exe ]; then
-      	    sed -i "/^$runq$/d" /tmp/SBE-query
-	    sed -i '/^$/d' /tmp/SBE-query-run
-	fi
-    done < /tmp/SBE-query
+        runq=$(awk -F";" '{print $1}' <<< $rline)
+        # Check if first in queue exists
+        if [ ! -e /proc/${runq} -a /proc/${runq}/exe ]; then
+            sed -i "/^$runq;.*$/d" /tmp/SBE-queue
+            sed -i '/^$/d' /tmp/SBE-queue
+        fi
+    done < /tmp/SBE-queue
+    while read rline
+    do
+        runq=$(awk -F";" '{print $1}' <<< $rline)
+        if [ ! -e /proc/${runq} -a /proc/${runq}/exe ]; then
+            sed -i "/^$runq;.*$/d" /tmp/SBE-queue-run
+            sed -i '/^$/d' /tmp/SBE-queue-run
+        fi
+    done < /tmp/SBE-queue-run
 
 
-    # End loop if st is less than 3
-    if [[ $query == $$ ]]; then
-        if [ -f /tmp/SBE-query-run ]; then
-
-            # Check if first in query exists
-            while read runq
-            do
-		if [ ! -e /proc/${runq} -a /proc/${runq}/exe ]; then
-                    sed -i "/^$runq$/d" /tmp/SBE-query-run
-		    sed -i '/^$/d' /tmp/SBE-query-run
-                fi
-            done < /tmp/SBE-query-run
-            st=$(cat /tmp/SBE-query-run | wc -l)
-
+    # End loop if queue exists and queue run count is less then stmax
+    if [[ $queue =~ "$$;" ]]; then
+        if [ -f /tmp/SBE-queue-run ]; then
+            st=$(cat /tmp/SBE-queue-run | wc -l)
         else
             st=1
         fi
     fi
 
+    # Sleep if in queue
     if [ $st -ge $stmax ]; then
-        #sleep $(( $(cat /tmp/SBE-query | wc -l) * 2 ))
-        sleep 1
+        sleep 2
     fi
 
 done
 
-echo $$ >> /tmp/SBE-query-run
+cID=$$
+echo "$cID; $(date); ${name};" >> /tmp/SBE-queue-run
+sed -i "/^$cID;.*$/d" /tmp/SBE-queue
 
 # # #
 # Load config
@@ -222,6 +224,7 @@ if [ $BACKUP -eq 1 ]; then
 
             echo "Successfull backup: $(date +"%y-%m-%d %H:%M")"
             rm -f ${sdir}run
+            sed -i "/^$cID;.*$/d" /tmp/SBE-queue-run
 
         ) > ${sdir}bac.log | tee ${rdir}all.log 2> ${sdir}err.log | tee ${rdir}all.log
         # # #

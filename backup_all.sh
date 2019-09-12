@@ -10,6 +10,7 @@ function getlatest() {
     git pull
     bash ${hdir}tools/update_scripts.sh
 }
+getlatest
 
 if [ -f ${hdir}config ]; then
     source ${hdir}config
@@ -31,13 +32,11 @@ do
             if  [[ $@ =~ "--weekly" ]] && \
                 [ $(ps -w | grep "bash.*${host}/backup_server.sh.*--weekly" | wc -l) -eq 1 ]; then
                 echo "Starting daily backup for $host..."
-                getlatest
                 bash "${dir}/backup_server.sh" $@ &
 
             elif [[ $@ =~ "--daily" ]] && \
                  [ $(ps -w | grep "bash.*${host}/backup_server.sh.*--daily" | wc -l) -eq 1 ]; then
                 echo "Starting daily backup for $host..."
-                getlatest
                 bash "${dir}/backup_server.sh" $@ &
 
             else
@@ -48,13 +47,11 @@ do
             if  [[ $@ =~ "--weekly" ]] && \
                 [ $(ps -ef | grep "bash.*${host}/backup_server.sh.*--weekly" | wc -l) -eq 1 ]; then
                 echo "Starting weekly backup for $host..."
-                getlatest
                 bash "${dir}/backup_server.sh" $@ &
 
             elif [[ $@ =~ "--daily" ]] && \
                  [ $(ps -ef | grep "bash.*${host}/backup_server.sh.*--daily" | wc -l) -eq 1 ]; then
                 echo "Starting daily backup for $host..."
-                getlatest
                 bash "${dir}/backup_server.sh" $@ &
 
             else
