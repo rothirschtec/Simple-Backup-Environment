@@ -7,7 +7,7 @@ mkdir -p $tdir
 
 function getlatest() {
     echo "Getting latest version"
-    git pull
+    git pull &>/dev/null
     bash ${hdir}tools/update_scripts.sh
 }
 getlatest
