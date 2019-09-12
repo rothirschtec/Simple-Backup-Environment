@@ -161,9 +161,9 @@ if [ $BACKUP -eq 1 ]; then
                     echo "backup..."
                     # $1:mysql config file, $2:backupdir, $3:sendmail(1/0), $4:mail mail, $5:delete backups after 
                     if [[ "$BUCKET_TYPE" == "weekly" ]]; then
-                        /bin/bash ${rdir}tools/mysql-backup.sh "${sdir}mysql.cnf" "${bmdi}" "$mail" "$sdir" "$MBWEEKS"
+                        /bin/bash ${rdir}tools/mysql-backup.sh "${sdir}mysql.cnf" "${bmdi}" "$sdir" "$MBWEEKS"
                     else
-                        /bin/bash ${rdir}tools/mysql-backup.sh "${sdir}mysql.cnf" "${bmdi}" "$mail" "$sdir" "$MBDAYS"
+                        /bin/bash ${rdir}tools/mysql-backup.sh "${sdir}mysql.cnf" "${bmdi}" "$sdir" "$MBDAYS"
                 fi
                    
                 fi

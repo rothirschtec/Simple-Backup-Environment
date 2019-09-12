@@ -44,7 +44,7 @@ GREP="$(which grep)"
 CHOWN="$(which chown)"
 CHMOD="$(which chmod)"
 GZIP="$(which gzip)"
-MAIL="$(which mail)"
+MAIL="$(which sendmail)"
 FIND="$(which find)"
 DF="$(which df)"
 
