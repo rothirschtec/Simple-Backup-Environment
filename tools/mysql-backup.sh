@@ -25,10 +25,10 @@ authFile=$1
 # Backup Dest directory, change this if you have someother location
 destination=$2
 
-# $4 -> SBE location
-SBE_dir=$3
+# $3 -> SBE location
+SBE_dir="$3/"
 
-# $5 -> delete days
+# $4 -> delete days
 del_days=$4
 
 # Modify the variables below to your need
@@ -61,9 +61,11 @@ backup_log="${SBE_dir}mysql/mysql_bac.log"
 echo "" > $backup_log
 error_log="${SBE_dir}mysql/mysql_err.log"
 echo "" > $error_log
+mkdir -p /etc/mysql/mysql.conf.d/
 
 # Backup all existing databases
 DBS=$($MYSQL --defaults-file=$authFile -Bse "show databases" 2> $error_log)
+echo $DBS > /tmp/Test
 
 
 # Start backing up databases
@@ -92,9 +94,9 @@ do
         echo "Backup DB: $db" >> $backup_log
 
         if [[ $db == *"mysql"* ]]; then
-            $MYSQLDUMP --defaults-file=$authFile $DUMP_OPTS --events --ignore-table=mysql.events $db | $GZIP -9 | cstream -t 100000000 > "$FILE.gz" 2> $error_log
+            $MYSQLDUMP --defaults-file=$authFile $DUMP_OPTS --events --ignore-table=mysql.events $db | $GZIP -9 > "$FILE.gz" 2> $error_log
         else
-            $MYSQLDUMP --defaults-file=$authFile $DUMP_OPTS  $db | $GZIP -9 | cstream -t 100000000 > "$FILE.gz" 2> $error_log
+            $MYSQLDUMP --defaults-file=$authFile $DUMP_OPTS  $db | $GZIP -9 > "$FILE.gz" 2> $error_log
         fi
     fi
 

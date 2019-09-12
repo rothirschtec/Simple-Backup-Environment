@@ -158,7 +158,6 @@ if [ $BACKUP -eq 1 ]; then
                 echo "Got pid $pid ..."
                 if [ $(wc -c ${sdir}err.log | awk '{print $1}') -eq 0 ]; then
                     sleep 2
-                    echo "backup..."
                     # $1:mysql config file, $2:backupdir, $3:sendmail(1/0), $4:mail mail, $5:delete backups after 
                     if [[ "$BUCKET_TYPE" == "weekly" ]]; then
                         /bin/bash ${rdir}tools/mysql-backup.sh "${sdir}mysql.cnf" "${bmdi}" "$sdir" "$MBWEEKS"
@@ -228,7 +227,7 @@ if [ $BACKUP -eq 1 ]; then
             rm -f ${sdir}run
             sed -i "/^$cID;.*$/d" /tmp/SBE-queue-run
 
-        ) > ${sdir}bac.log | tee ${rdir}all.log 2> ${sdir}err.log | tee ${rdir}all.log
+        ) >> ${sdir}bac.log | tee ${rdir}all.log 2> ${sdir}err.log | tee ${rdir}all.log
         # # #
 
         if [ -f ${sdir}mysql/mysql_bac.log ]; then
