@@ -49,15 +49,15 @@ You can add a crontab to execute the script, here are a few examples:
 	crontab -e
 
 	# Each day at 18:00 o'clock
-	0 18 * * * bash <PathToRT-Blog-SBE>/backup_all.sh --daily
+	0 18 * * * /bin/bash <PathToRT-Blog-SBE>/backup_all.sh --daily
 
 	# Every 5 minutes through the day from 08:00 AM to 10:00 PM 
 	# The script will only allow one host backup at the time
 	# So if you will execute it every 5minutes it'll start again if one job is done
-	*/5 8-22 * * * bash <PathToRT-Blog-SBE>/backup_all.sh --daily
+	*/5 8-22 * * * /bin/bash <PathToRT-Blog-SBE>/backup_all.sh --daily
 
 	# Each sunday, you will create a weekly backup *--weekly* and send a mail *--log* to the admin
-	0 20 * * 7 bash <PathToRT-Blog-SBE>/backup_all.sh --weekly --log
+	0 20 * * 7 /bin/bash <PathToRT-Blog-SBE>/backup_all.sh --weekly --log
 
 ## qNap crontab
 On a qNap NAS you have to add the cron tasks inside _/etc/config/crontab_ and reload crontab after it
