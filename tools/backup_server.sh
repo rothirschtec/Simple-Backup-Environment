@@ -226,6 +226,7 @@ if [ $BACKUP -eq 1 ]; then
             echo "Successfull backup: $(date +"%y-%m-%d %H:%M")"
             rm -f ${sdir}run
             sed -i "/^$cID;.*$/d" /tmp/SBE-queue-run
+	    echo "$cID; $(date); ${name}; ${BUCKET_TYPE};" >> /tmp/SBE-done
 
         ) >> ${sdir}bac.log | tee ${rdir}all.log 2> ${sdir}err.log | tee ${rdir}all.log
         # # #
@@ -254,9 +255,9 @@ if [ $BACKUP -eq 1 ]; then
     if [ $(cat ${sdir}err.log | wc -w | awk '{ print $1 }') -gt 0 ]; then
         echo "Script stopped: $(date +"%y-%m-%d %H:%M")" >> ${sdir}err.log
         echo -e "Subject: Backup Error with $name on $HOSTNAME\n\n $(cat ${sdir}err.log)" | sendmail $mail
+	exit 1
     fi
     # # #
-
 
         
 fi # if $BACKUP -eq 1
