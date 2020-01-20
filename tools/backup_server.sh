@@ -36,6 +36,7 @@ do
 
     queue=$(sed -n $(($(cat /tmp/SBE-queue-run | wc -l) + 1))p /tmp/SBE-queue);
 
+
     # Check if first to $stmax in queue exists
     while read rline
     do
@@ -46,6 +47,7 @@ do
             sed -i '/^$/d' /tmp/SBE-queue
         fi
     done < /tmp/SBE-queue
+
     while read rline
     do
         runq=$(awk -F";" '{print $1}' <<< $rline)

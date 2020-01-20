@@ -4,6 +4,7 @@
 # But not these files...
 !.gitignore
 !backup_all.sh
+!status.sh
 !create_bac.sh
 !dist2server.sh
 !LICENSE
