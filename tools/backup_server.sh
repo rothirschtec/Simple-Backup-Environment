@@ -26,52 +26,76 @@ rm -f ${sdir}run
 while [ "$st" -ge "$stmax" ]
 do
 
-    if [ ! -f /tmp/SBE-queue ]; then
-        echo "$$; $(date); ${name};" >> /tmp/SBE-queue
-    else
-        if ! cat /tmp/SBE-queue | grep $$ &> /dev/null; then
-            echo "$$; $(date); ${name};" >> /tmp/SBE-queue
-        fi
-    fi
 
-    queue=$(sed -n $(($(cat /tmp/SBE-queue-run | wc -l) + 1))p /tmp/SBE-queue);
-
-
-    # Check if first to $stmax in queue exists
+    # Check if there's already a job for this server
+    execution=true
     while read rline
     do
-        runq=$(awk -F";" '{print $1}' <<< $rline)
-        # Check if first in queue exists
-        if [ ! -e /proc/${runq} -a /proc/${runq}/exe ]; then
-            sed -i "/^$runq;.*$/d" /tmp/SBE-queue
-            sed -i '/^$/d' /tmp/SBE-queue
-        fi
+        runq=$(awk -F";" '{print $3}' <<< $rline)
+	runq=$(sed 's/ //g' <<< $runq)
+        if [[ "${name}" == "${runq}" ]]; then execution=false; fi
     done < /tmp/SBE-queue
-
     while read rline
     do
-        runq=$(awk -F";" '{print $1}' <<< $rline)
-        if [ ! -e /proc/${runq} -a /proc/${runq}/exe ]; then
-            sed -i "/^$runq;.*$/d" /tmp/SBE-queue-run
-            sed -i '/^$/d' /tmp/SBE-queue-run
-        fi
+        runq=$(awk -F";" '{print $3}' <<< $rline)
+	runq=$(sed 's/ //g' <<< $runq)
+        if [[ "${name}" == "${runq}" ]]; then execution=false; fi
     done < /tmp/SBE-queue-run
 
 
-    # End loop if queue exists and queue run count is less then stmax
-    if [[ $queue =~ "$$;" ]]; then
-        if [ -f /tmp/SBE-queue-run ]; then
-            st=$(cat /tmp/SBE-queue-run | wc -l)
-        else
-            st=1
-        fi
-    fi
+    # And end script if it is so
+    if [[ $execution == true ]]; then
 
-    # Sleep if in queue
-    if [ $st -ge $stmax ]; then
-        sleep 2
-    fi
+	    if [ ! -f /tmp/SBE-queue ]; then
+		echo "$$; $(date); ${name};" >> /tmp/SBE-queue
+	    else
+		if ! cat /tmp/SBE-queue | grep $$ &> /dev/null; then
+		    echo "$$; $(date); ${name};" >> /tmp/SBE-queue
+		fi
+	    fi
 
+	    queue=$(sed -n $(($(cat /tmp/SBE-queue-run | wc -l) + 1))p /tmp/SBE-queue);
+
+
+
+	    # Check if first to $stmax in queue exists
+	    while read rline
+	    do
+		runq=$(awk -F";" '{print $1}' <<< $rline)
+		# Check if first in queue exists
+		if [ ! -e /proc/${runq} -a /proc/${runq}/exe ]; then
+		    sed -i "/^$runq;.*$/d" /tmp/SBE-queue
+		    sed -i '/^$/d' /tmp/SBE-queue
+		fi
+	    done < /tmp/SBE-queue
+
+	    while read rline
+	    do
+		runq=$(awk -F";" '{print $1}' <<< $rline)
+		if [ ! -e /proc/${runq} -a /proc/${runq}/exe ]; then
+		    sed -i "/^$runq;.*$/d" /tmp/SBE-queue-run
+		    sed -i '/^$/d' /tmp/SBE-queue-run
+		fi
+	    done < /tmp/SBE-queue-run
+
+
+	    # End loop if queue exists and queue run count is less then stmax
+	    if [[ $queue =~ "$$;" ]]; then
+		if [ -f /tmp/SBE-queue-run ]; then
+		    st=$(cat /tmp/SBE-queue-run | wc -l)
+		else
+		    st=1
+		fi
+	    fi
+
+	    # Sleep if in queue
+	    if [ $st -ge $stmax ]; then
+		sleep 2
+	    fi
+
+    else
+	exit 1
+    fi
 done
 
 cID=$$
