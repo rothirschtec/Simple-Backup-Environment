@@ -66,16 +66,16 @@ do
     done < ${reports}SBE-queue
 
 
-    while read rline
-    do
-        runq=$(awk -F";" '{print $1}' <<< $rline)
-        if [ ! -e /proc/${runq} -a /proc/${runq}/exe ]; then
-            if [ ! -f ${reports}SBE-queue-run ]; then
+    if [ ! -f ${reports}SBE-queue-run ]; then
+        while read rline
+        do
+            runq=$(awk -F";" '{print $1}' <<< $rline)
+            if [ ! -e /proc/${runq} -a /proc/${runq}/exe ]; then
                 sed -i "/^$runq;.*$/d" ${reports}SBE-queue-run
+                sed -i '/^$/d' ${reports}SBE-queue-run
             fi
-            sed -i '/^$/d' ${reports}SBE-queue-run
-        fi
-    done < ${reports}SBE-queue-run
+        done < ${reports}SBE-queue-run
+    fi
 
 
     # End loop if queue exists and queue run count is less then stmax
