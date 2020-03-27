@@ -47,26 +47,23 @@ do
     fi
 
 
-    if [ ! -f ${reports}SBE-queue-run ]; then
+    if [ -f ${reports}SBE-queue-run ]; then
+
         queue=$(sed -n $(($(cat ${reports}SBE-queue-run | wc -l) + 1))p ${reports}SBE-queue);
-    else
-        queue=0
-    fi
 
 
-    # Check if first to $stmax in queue exists
-    while read rline
-    do
-        runq=$(awk -F";" '{print $1}' <<< $rline)
-        # Check if first in queue exists
-        if [ ! -e /proc/${runq} -a /proc/${runq}/exe ]; then
-            sed -i "/^$runq;.*$/d" ${reports}SBE-queue
-            sed -i '/^$/d' ${reports}SBE-queue
-        fi
-    done < ${reports}SBE-queue
+        # Check if first to $stmax in queue exists
+        while read rline
+        do
+            runq=$(awk -F";" '{print $1}' <<< $rline)
+            # Check if first in queue exists
+            if [ ! -e /proc/${runq} -a /proc/${runq}/exe ]; then
+                sed -i "/^$runq;.*$/d" ${reports}SBE-queue
+                sed -i '/^$/d' ${reports}SBE-queue
+            fi
+        done < ${reports}SBE-queue
 
 
-    if [ ! -f ${reports}SBE-queue-run ]; then
         while read rline
         do
             runq=$(awk -F";" '{print $1}' <<< $rline)
@@ -75,21 +72,20 @@ do
                 sed -i '/^$/d' ${reports}SBE-queue-run
             fi
         done < ${reports}SBE-queue-run
-    fi
 
 
-    # End loop if queue exists and queue run count is less then stmax
-    if [[ $queue =~ "$$;" ]]; then
-        if [ -f ${reports}SBE-queue-run ]; then
+        # End loop if queue exists and queue run count is less then stmax
+        if [[ $queue =~ "$$;" ]]; then
             st=$(cat ${reports}SBE-queue-run | wc -l)
-        else
-            st=1
         fi
-    fi
 
-    # Sleep if in queue
-    if [ $st -ge $stmax ]; then
-        sleep 2
+        # Sleep if in queue
+        if [ $st -ge $stmax ]; then
+            sleep 2
+        fi
+
+    else
+        st=$(($stmax-1))
     fi
 
 done
