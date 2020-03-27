@@ -46,7 +46,12 @@ do
         fi
     fi
 
-    queue=$(sed -n $(($(cat ${reports}SBE-queue-run | wc -l) + 1))p ${reports}SBE-queue);
+
+    if [ ! -f ${reports}SBE-queue-run ]; then
+        queue=$(sed -n $(($(cat ${reports}SBE-queue-run | wc -l) + 1))p ${reports}SBE-queue);
+    else
+        queue=0
+    fi
 
 
     # Check if first to $stmax in queue exists
@@ -60,11 +65,14 @@ do
         fi
     done < ${reports}SBE-queue
 
+
     while read rline
     do
         runq=$(awk -F";" '{print $1}' <<< $rline)
         if [ ! -e /proc/${runq} -a /proc/${runq}/exe ]; then
-            sed -i "/^$runq;.*$/d" ${reports}SBE-queue-run
+            if [ ! -f ${reports}SBE-queue-run ]; then
+                sed -i "/^$runq;.*$/d" ${reports}SBE-queue-run
+            fi
             sed -i '/^$/d' ${reports}SBE-queue-run
         fi
     done < ${reports}SBE-queue-run
