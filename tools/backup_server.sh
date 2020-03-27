@@ -15,6 +15,18 @@ rdir="$PWD/"
 error=false
 # # #
 
+# # #
+# Can be configured inside config file
+mail=root
+reports=/tmp/
+
+# # #
+# Load config
+if [ -f ${rdir}config ]; then
+    source ${rdir}config
+else
+    source ${rdir}tools/config_example
+fi
 
 # # #
 # Wait 10 seconds for each existing backup process
@@ -26,89 +38,57 @@ rm -f ${sdir}run
 while [ "$st" -ge "$stmax" ]
 do
 
-
-    # Check if there's already a job for this server
-    execution=true
-    while read rline
-    do
-        runq=$(awk -F";" '{print $3}' <<< $rline)
-	runq=$(sed 's/ //g' <<< $runq)
-        if [[ "${name}" == "${runq}" ]]; then execution=false; fi
-    done < /tmp/SBE-queue
-    while read rline
-    do
-        runq=$(awk -F";" '{print $3}' <<< $rline)
-	runq=$(sed 's/ //g' <<< $runq)
-        if [[ "${name}" == "${runq}" ]]; then execution=false; fi
-    done < /tmp/SBE-queue-run
-
-
-    # And end script if it is so
-    if [[ $execution == true ]]; then
-
-	    if [ ! -f /tmp/SBE-queue ]; then
-		echo "$$; $(date); ${name};" >> /tmp/SBE-queue
-	    else
-		if ! cat /tmp/SBE-queue | grep $$ &> /dev/null; then
-		    echo "$$; $(date); ${name};" >> /tmp/SBE-queue
-		fi
-	    fi
-
-	    queue=$(sed -n $(($(cat /tmp/SBE-queue-run | wc -l) + 1))p /tmp/SBE-queue);
-
-
-
-	    # Check if first to $stmax in queue exists
-	    while read rline
-	    do
-		runq=$(awk -F";" '{print $1}' <<< $rline)
-		# Check if first in queue exists
-		if [ ! -e /proc/${runq} -a /proc/${runq}/exe ]; then
-		    sed -i "/^$runq;.*$/d" /tmp/SBE-queue
-		    sed -i '/^$/d' /tmp/SBE-queue
-		fi
-	    done < /tmp/SBE-queue
-
-	    while read rline
-	    do
-		runq=$(awk -F";" '{print $1}' <<< $rline)
-		if [ ! -e /proc/${runq} -a /proc/${runq}/exe ]; then
-		    sed -i "/^$runq;.*$/d" /tmp/SBE-queue-run
-		    sed -i '/^$/d' /tmp/SBE-queue-run
-		fi
-	    done < /tmp/SBE-queue-run
-
-
-	    # End loop if queue exists and queue run count is less then stmax
-	    if [[ $queue =~ "$$;" ]]; then
-		if [ -f /tmp/SBE-queue-run ]; then
-		    st=$(cat /tmp/SBE-queue-run | wc -l)
-		else
-		    st=1
-		fi
-	    fi
-
-	    # Sleep if in queue
-	    if [ $st -ge $stmax ]; then
-		sleep 2
-	    fi
-
+    if [ ! -f ${reports}SBE-queue ]; then
+        echo "$$; $(date); ${name};" >> ${reports}SBE-queue
     else
-	exit 1
+        if ! cat ${reports}SBE-queue | grep $$ &> /dev/null; then
+            echo "$$; $(date); ${name};" >> ${reports}SBE-queue
+        fi
     fi
+
+    queue=$(sed -n $(($(cat ${reports}SBE-queue-run | wc -l) + 1))p ${reports}SBE-queue);
+
+
+    # Check if first to $stmax in queue exists
+    while read rline
+    do
+        runq=$(awk -F";" '{print $1}' <<< $rline)
+        # Check if first in queue exists
+        if [ ! -e /proc/${runq} -a /proc/${runq}/exe ]; then
+            sed -i "/^$runq;.*$/d" ${reports}SBE-queue
+            sed -i '/^$/d' ${reports}SBE-queue
+        fi
+    done < ${reports}SBE-queue
+
+    while read rline
+    do
+        runq=$(awk -F";" '{print $1}' <<< $rline)
+        if [ ! -e /proc/${runq} -a /proc/${runq}/exe ]; then
+            sed -i "/^$runq;.*$/d" ${reports}SBE-queue-run
+            sed -i '/^$/d' ${reports}SBE-queue-run
+        fi
+    done < ${reports}SBE-queue-run
+
+
+    # End loop if queue exists and queue run count is less then stmax
+    if [[ $queue =~ "$$;" ]]; then
+        if [ -f ${reports}SBE-queue-run ]; then
+            st=$(cat ${reports}SBE-queue-run | wc -l)
+        else
+            st=1
+        fi
+    fi
+
+    # Sleep if in queue
+    if [ $st -ge $stmax ]; then
+        sleep 2
+    fi
+
 done
 
 cID=$$
-echo "$cID; $(date); ${name};" >> /tmp/SBE-queue-run
-sed -i "/^$cID;.*$/d" /tmp/SBE-queue
-
-# # #
-# Load config
-if [ -f ${rdir}config ]; then
-    source ${rdir}config
-else
-    source ${rdir}tools/config_example
-fi
+echo "$cID; $(date); ${name};" >> ${reports}SBE-queue-run
+sed -i "/^$cID;.*$/d" ${reports}SBE-queue
 
 # # #
 # Initialize vars
@@ -251,8 +231,8 @@ if [ $BACKUP -eq 1 ]; then
 
             echo "Successfull backup: $(date +"%y-%m-%d %H:%M")"
             rm -f ${sdir}run
-            sed -i "/^$cID;.*$/d" /tmp/SBE-queue-run
-	    echo "$cID; $(date); ${name}; ${BUCKET_TYPE};" >> /tmp/SBE-done
+            sed -i "/^$cID;.*$/d" ${reports}SBE-queue-run
+	    echo "$cID; $(date); ${name}; ${BUCKET_TYPE};" >> ${reports}SBE-done
 
         ) >> ${sdir}bac.log | tee ${rdir}all.log 2> ${sdir}err.log | tee ${rdir}all.log
         # # #
