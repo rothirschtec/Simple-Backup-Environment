@@ -1,4 +1,4 @@
-# RT-Blog-SBE
+# RT-Blog-SBE (alpha)
 
 ## SBE or Simple Backup Environment
 
