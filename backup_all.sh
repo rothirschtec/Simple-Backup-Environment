@@ -48,9 +48,18 @@ for (( x=0; x < ${#b_dirs[@]}; x++ ))
 do
 
     if [[ $1 == "now" ]]; then
-        dobackup[0]=1
-        dobackup[1]=1
-        dobackup[2]=1
+
+        if [[ ! "${didbackup[@]}" =~ "${b_dirs[$x]}" ]]; then
+            didbackup[$x]=${b_dirs[$x]}
+            dobackup[0]=1
+            dobackup[1]=1
+            dobackup[2]=1
+        else
+            dobackup[0]=0
+            dobackup[1]=0
+            dobackup[2]=0
+        fi
+
 
     else
 
