@@ -47,80 +47,88 @@ fi
 for (( x=0; x < ${#b_dirs[@]}; x++ ))
 do
 
-    dobackup[0]=0
-    dobackup[1]=0
-    dobackup[2]=0
+    if [[ $1 == "now" ]]; then
+        dobackup[0]=0
+        dobackup[1]=0
+        dobackup[2]=0
 
-    # Possible things
-    # 9h 
-    # 15h
-    # 9m 
-    # 15m
-    # 12:13
-    # 22
-    if [[ "${b_invs[$x]}" =~ ^[0-9][hH]$ ]]; then
-        b_invs[x]="$(sed 's/[hH]//g' <<< ${b_invs[$x]})"
-        b_hour=$(date +"%H")
-        dobackup[2]=1
-    elif [[ "${b_invs[$x]}" =~ ^[0-9][0-9][hH]$ ]]; then
-        b_invs[x]=$(sed 's/[hH]//g' <<< ${b_invs[$x]})
-        b_hour=$(date +"%H")
-        dobackup[2]=1
-    elif [[ "${b_invs[$x]}" =~ ^[0-9][0-9][mM]$ ]]; then
-        b_invs[x]=$(sed 's/[mM]//g' <<< ${b_invs[$x]})
-        b_hour=$(date +"%M")
-        dobackup[2]=2
-    elif [[ "${b_invs[$x]}" =~ ^[0-9][mM]$ ]]; then
-        b_invs[x]="$(sed 's/[mM]//g' <<< ${b_invs[$x]})"
-        b_hour=$(date +"%M")
-        dobackup[2]=2
-    elif [[ "${b_invs[$x]}" =~ ^[0-9][0-9]":"[0-9][0-9]$ ]]; then
-        b_hour=$(date +"%H:%M")
     else
-        echo "Unknown configuration: ${b_invs[$x]}"
-        exit 1
-    fi
 
-    if [ ${dobackup[2]} -eq 1 ] && [ $(( $b_hour % ${b_invs[$x]} )) -eq 0 ]; then
-        if [[ $(date +"%M") == "00" ]]; then
-            dobackup[0]=1
-        fi
-    elif [ ${dobackup[2]} -eq 2 ] && [ $(( $b_hour % ${b_invs[$x]} )) -eq 0 ]; then
         dobackup[0]=1
-    elif [[ "${b_invs[$x]}" =~ "$b_hour" ]]; then
-        dobackup[0]=1
-    else
-        echo "Not valid ${b_invs[$x]} =~ $b_hour"
-    fi
-
-    # Possible things
-    # Monday 
-    # Monday,Tuesday
-    # Mo
-    # Mo,We,Fr
-    # 22
-    if [[ "${b_dats[$x]}" =~ ^[0-9][0-9]$ ]]; then
-        b_hour=$(date +"%m")
-    elif [[ "${b_dats[$x]}" =~ ^[0-9]$ ]]; then
-        b_dats[x]="0${b_dats[$x]}"
-        b_hour=$(date +"%m")
-    elif [[ "${b_dats[$x]}" =~ ^[A-Z][a-z][a-z][a-z][a-z]* ]]; then
-        b_hour=$(date +"%A")
-    elif [[ "${b_dats[$x]}" =~ ^[A-Z][a-z][a-z]$ ]]; then
-        b_hour=$(date +"%a")
-    elif [[ "${b_dats[$x]}" =~ ^[A-Z][a-z][a-z]","* ]]; then
-        b_hour=$(date +"%a")
-    else
-        echo "Unknown configuration: ${b_dats[$x]}"
-        exit 1
-    fi
-
-    if [[ "${b_dats[$x]}" =~ "$b_hour" ]]; then
         dobackup[1]=1
-    else
-        echo "Not valid ${b_dats[$x]} =~ $b_hour"
-    fi
+        dobackup[2]=1
 
+        # Possible things
+        # 9h 
+        # 15h
+        # 9m 
+        # 15m
+        # 12:13
+        # 22
+        if [[ "${b_invs[$x]}" =~ ^[0-9][hH]$ ]]; then
+            b_invs[x]="$(sed 's/[hH]//g' <<< ${b_invs[$x]})"
+            b_hour=$(date +"%H")
+            dobackup[2]=1
+        elif [[ "${b_invs[$x]}" =~ ^[0-9][0-9][hH]$ ]]; then
+            b_invs[x]=$(sed 's/[hH]//g' <<< ${b_invs[$x]})
+            b_hour=$(date +"%H")
+            dobackup[2]=1
+        elif [[ "${b_invs[$x]}" =~ ^[0-9][0-9][mM]$ ]]; then
+            b_invs[x]=$(sed 's/[mM]//g' <<< ${b_invs[$x]})
+            b_hour=$(date +"%M")
+            dobackup[2]=2
+        elif [[ "${b_invs[$x]}" =~ ^[0-9][mM]$ ]]; then
+            b_invs[x]="$(sed 's/[mM]//g' <<< ${b_invs[$x]})"
+            b_hour=$(date +"%M")
+            dobackup[2]=2
+        elif [[ "${b_invs[$x]}" =~ ^[0-9][0-9]":"[0-9][0-9]$ ]]; then
+            b_hour=$(date +"%H:%M")
+        else
+            echo "Unknown configuration: ${b_invs[$x]}"
+            exit 1
+        fi
+
+        if [ ${dobackup[2]} -eq 1 ] && [ $(( $b_hour % ${b_invs[$x]} )) -eq 0 ]; then
+            if [[ $(date +"%M") == "00" ]]; then
+                dobackup[0]=1
+            fi
+        elif [ ${dobackup[2]} -eq 2 ] && [ $(( $b_hour % ${b_invs[$x]} )) -eq 0 ]; then
+            dobackup[0]=1
+        elif [[ "${b_invs[$x]}" =~ "$b_hour" ]]; then
+            dobackup[0]=1
+        else
+            echo "Not valid ${b_invs[$x]} =~ $b_hour"
+        fi
+
+        # Possible things
+        # Monday 
+        # Monday,Tuesday
+        # Mo
+        # Mo,We,Fr
+        # 22
+        if [[ "${b_dats[$x]}" =~ ^[0-9][0-9]$ ]]; then
+            b_hour=$(date +"%m")
+        elif [[ "${b_dats[$x]}" =~ ^[0-9]$ ]]; then
+            b_dats[x]="0${b_dats[$x]}"
+            b_hour=$(date +"%m")
+        elif [[ "${b_dats[$x]}" =~ ^[A-Z][a-z][a-z][a-z][a-z]* ]]; then
+            b_hour=$(date +"%A")
+        elif [[ "${b_dats[$x]}" =~ ^[A-Z][a-z][a-z]$ ]]; then
+            b_hour=$(date +"%a")
+        elif [[ "${b_dats[$x]}" =~ ^[A-Z][a-z][a-z]","* ]]; then
+            b_hour=$(date +"%a")
+        else
+            echo "Unknown configuration: ${b_dats[$x]}"
+            exit 1
+        fi
+
+        if [[ "${b_dats[$x]}" =~ "$b_hour" ]]; then
+            dobackup[1]=1
+        else
+            echo "Not valid ${b_dats[$x]} =~ $b_hour"
+        fi
+
+    fi
 
     if [ ${dobackup[0]} -eq 1 ] && [ ${dobackup[1]} -eq 1 ]; then
 
