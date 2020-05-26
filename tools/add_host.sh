@@ -14,7 +14,7 @@ echo
 echo 'Change the /etc/ssh/sshd_config on your remote host'
 echo ' - PermitRootLogin yes'
 echo ' - PasswordAuthentication yes'
-echo 'And restart it afterwards'
+echo 'And restart the ssh service afterwards "service ssh restart"'
 read -p 'Approve if done [Enter]'
 
 ssh-copy-id -i ~/.ssh/id_rsa.pub -p $sport $suser@$sip 
@@ -66,4 +66,4 @@ fi
 echo "..."
 echo "Configuration finished"
 echo "Starting backup process for the first time"
-#bash ${bacfol}backup_server.sh
+bash ${bacfol}backup_server.sh
