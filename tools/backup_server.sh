@@ -181,8 +181,13 @@ if [ $BACKUP -eq 1 ]; then
                 wait $pid 2>/dev/null
             fi
 
-            bdir="${sdir}rotate_bak/${BUCKET_TYPE}/${BUCKET}/"
-            mkdir -p ${bdir}
+            bdir="${sdir}rotate_bak/${BUCKET_TYPE}/${BUCKET}_$(date +"%Y-%m-%d_%H%M%S")/"
+            if [ -d ${sdir}rotate_bak/${BUCKET_TYPE}/${BUCKET}* ]; then
+                olddir=$(echo ${sdir}rotate_bak/${BUCKET_TYPE}/${BUCKET}*)
+                mv $olddir $bdir
+            else
+                mkdir -p ${bdir}
+            fi
             echo "Starting Backup: $(date +"%y-%m-%d %H:%M")"
             echo "Backup Directory: $bdir"
             echo ""
