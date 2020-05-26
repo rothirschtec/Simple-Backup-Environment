@@ -1,0 +1,36 @@
+<server>
+    <backupdirectory>Netbox</backupdirectory>
+    <intervall>5h</intervall>
+    <date>Fri</date>
+    <type>daily</type>
+</server>
+<server>
+    <backupdirectory>Netbox</backupdirectory>
+    <intervall>15:00</intervall>
+    <date>22</date>
+    <type>daily</type>
+</server>
+<server>
+    <backupdirectory>Netbox</backupdirectory>
+    <intervall>18:00</intervall>
+    <date>Mon,Tue,Wen</date>
+    <type>weekly</type>
+</server>
+<server>
+    <backupdirectory>rt.dgr</backupdirectory>
+    <intervall>15m</intervall>
+    <date>Monday,Tuesday,Friday</date>
+    <type>daily</type>
+</server>
+<server>
+    <backupdirectory>rt.dgr</backupdirectory>
+    <intervall>15h</intervall>
+    <date>22</date>
+    <type>monthly</type>
+</server>
+<server>
+    <backupdirectory>rt.dgr</backupdirectory>
+    <intervall>15h</intervall>
+    <date>7</date>
+    <type>weekly</type>
+</server>
