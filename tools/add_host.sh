@@ -11,9 +11,10 @@ cd ..
 hdir="$PWD/"
 
 echo
-echo 'Change the ssh config on your remote host'
+echo 'Change the /etc/ssh/sshd_config on your remote host'
 echo ' - PermitRootLogin yes'
 echo ' - PasswordAuthentication yes'
+echo 'And restart it afterwards'
 read -p 'Approve if done [Enter]'
 
 ssh-copy-id -i ~/.ssh/id_rsa.pub -p $sport $suser@$sip 
