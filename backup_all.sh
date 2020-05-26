@@ -126,7 +126,7 @@ do
 
         if [ -f ${hdir}${b_dirs[$x]}/backup_server.sh ]; then
     
-            echo bash "${hdir}${b_dirs[$x]}/backup_server.sh" "--${b_type[$x]}" &
+            bash "${hdir}${b_dirs[$x]}/backup_server.sh" "--${b_type[$x]}" &
             echo "Backup for ${b_dirs[$x]} under way..."
 
         fi
