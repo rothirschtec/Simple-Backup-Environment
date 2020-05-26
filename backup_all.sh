@@ -6,21 +6,8 @@ tdir="/tmp/SBE/$RANDOM/"
 mkdir -p $tdir
 
 
-
-if [ -f ${hdir}backup.xml ]; then
-
-
-    b_dirs=($(grep -oP '(?<=<backupdirectory>).*?(?=</backupdirectory>)' ${hdir}backup.xml))
-    b_invs=($(grep -oP '(?<=<intervall>).*?(?=</intervall>)' ${hdir}backup.xml))
-    b_dats=($(grep -oP '(?<=<date>).*?(?=</date>)' ${hdir}backup.xml))
-    b_type=($(grep -oP '(?<=<type>).*?(?=</type>)' ${hdir}backup.xml))
-
-else
-    cp ${hdir}tools/backup.xml-example ${hdir}backup.xml
-    echo "Please configure your backup.xml file first"
-fi
-
-
+# # #
+# Update scripts
 function getlatest() {
     echo "Getting latest version"
     git pull &>/dev/null
@@ -28,18 +15,41 @@ function getlatest() {
 }
 getlatest
 
+
+# # #
+# Parse backup.xml
+if [ -f ${hdir}backup.xml ]; then
+
+    b_dirs=($(grep -oP '(?<=<backupdirectory>).*?(?=</backupdirectory>)' ${hdir}backup.xml))
+    b_invs=($(grep -oP '(?<=<intervall>).*?(?=</intervall>)' ${hdir}backup.xml))
+    b_dats=($(grep -oP '(?<=<date>).*?(?=</date>)' ${hdir}backup.xml))
+    b_type=($(grep -oP '(?<=<type>).*?(?=</type>)' ${hdir}backup.xml))
+
+else
+
+    cp ${hdir}tools/backup.xml-example ${hdir}backup.xml
+    echo "Please configure your backup.xml file first"
+
+fi
+
+
+# # #
+# Parse config
 if [ -f ${hdir}config ]; then
     source ${hdir}config
 else
     source ${hdir}tools/config_example
 fi
 
-echo "Backup"
+
+# # #
+# Start backups
 for (( x=0; x < ${#b_dirs[@]}; x++ ))
 do
 
     dobackup[0]=0
     dobackup[1]=0
+    dobackup[2]=0
 
     # Possible things
     # 9h 
@@ -49,17 +59,21 @@ do
     # 12:13
     # 22
     if [[ "${b_invs[$x]}" =~ ^[0-9][hH]$ ]]; then
-        b_invs[x]="0$(sed 's/[hH]//g' <<< ${b_invs[$x]})"
+        b_invs[x]="$(sed 's/[hH]//g' <<< ${b_invs[$x]})"
         b_hour=$(date +"%H")
+        dobackup[2]=1
     elif [[ "${b_invs[$x]}" =~ ^[0-9][0-9][hH]$ ]]; then
         b_invs[x]=$(sed 's/[hH]//g' <<< ${b_invs[$x]})
         b_hour=$(date +"%H")
+        dobackup[2]=1
     elif [[ "${b_invs[$x]}" =~ ^[0-9][0-9][mM]$ ]]; then
         b_invs[x]=$(sed 's/[mM]//g' <<< ${b_invs[$x]})
         b_hour=$(date +"%M")
+        dobackup[2]=1
     elif [[ "${b_invs[$x]}" =~ ^[0-9][mM]$ ]]; then
-        b_invs[x]="0$(sed 's/[mM]//g' <<< ${b_invs[$x]})"
+        b_invs[x]="$(sed 's/[mM]//g' <<< ${b_invs[$x]})"
         b_hour=$(date +"%M")
+        dobackup[2]=1
     elif [[ "${b_invs[$x]}" =~ ^[0-9][0-9]":"[0-9][0-9]$ ]]; then
         b_hour=$(date +"%H:%M")
     else
@@ -67,7 +81,9 @@ do
         exit 1
     fi
 
-    if [[ "${b_invs[$x]}" =~ "$b_hour" ]]; then
+    if [ ${dobackup[2]} -eq 1 ] && [ $(( $b_hour % ${b_invs[$x]} )) -eq 0 ]; then
+        dobackup[0]=1
+    elif [[ "${b_invs[$x]}" =~ "$b_hour" ]]; then
         dobackup[0]=1
     else
         echo "Not valid ${b_invs[$x]} =~ $b_hour"
@@ -106,7 +122,7 @@ do
 
         if [ -f ${hdir}${b_dirs[$x]}/backup_server.sh ]; then
     
-            echo bash "${hdir}${b_dirs[$x]}/backup_server.sh" "--${b_type[$x]}" &
+            bash "${hdir}${b_dirs[$x]}/backup_server.sh" "--${b_type[$x]}" &
             echo "Backup for ${b_dirs[$x]} under way..."
 
         fi
