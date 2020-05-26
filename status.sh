@@ -20,7 +20,7 @@ echo; echo "RUN"
 cat ${reports}SBE-queue-run
 
 if [ -f ${reports}SBE-done ]; then
-	echo "DONE (Last 10)"
+	echo; echo "DONE (Last 10)"
 	tail -10 ${reports}SBE-done
 else
 	echo "No backups with state DONE"
