@@ -82,7 +82,7 @@ do
     fi
 
     if [ ${dobackup[2]} -eq 1 ] && [ $(( $b_hour % ${b_invs[$x]} )) -eq 0 ]; then
-        if [[ $(date +"%M") > 0 ]]; then
+        if [[ $(date +"%M") == "00" ]]; then
             dobackup[0]=1
         fi
     elif [ ${dobackup[2]} -eq 2 ] && [ $(( $b_hour % ${b_invs[$x]} )) -eq 0 ]; then
