@@ -44,10 +44,11 @@ Therfore you can install qpkg via the app store to be able to build the entware 
 And don't forget to set your e-mail settings in qnap control panel. *ControlPanel > Notification Center > Service Account and Device Pairing > E-mail > Add SMPT Service*
 
 ## Crontab
-You can add a crontab to execute the script, here are a few examples:
+You can add a crontab to execute the script:
 
 	crontab -e
 
+<<<<<<< HEAD
 	# Each day at 18:00 o'clock
 	0 18 * * * /bin/bash <PathToRT-Blog-SBE>/backup_all.sh --daily
 
@@ -58,6 +59,16 @@ You can add a crontab to execute the script, here are a few examples:
 
 	# Each sunday, you will create a weekly backup *--weekly* and send a mail *--log* to the admin
 	0 20 * * 7 /bin/bash <PathToRT-Blog-SBE>/backup_all.sh --weekly --log
+=======
+	# SBE backup each minute
+	*/1 * * * * bash <PathToRT-Blog-SBE>/backup_all.sh
+
+
+## backup.xml
+
+    cp tools/backup.xml-example backup.xml
+
+>>>>>>> 2f453aa114e90087ecc3383214e4e13f15652af3
 
 ## qNap crontab
 On a qNap NAS you have to add the cron tasks inside _/etc/config/crontab_ and reload crontab after it

@@ -73,8 +73,3 @@ fi
 
 echo "..."
 echo "Configuration finished"
-read -p "Starting backup process for the first time? (Yn): " sp
-
-if [[ $sp != [Nn] ]]; then
-    bash ${bacfol}backup_server.sh &
-fi
