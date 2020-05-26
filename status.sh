@@ -13,9 +13,10 @@ else
 fi
 
 
-echo "QUEUE"
+echo; echo "QUEUE"
 cat ${reports}SBE-queue
-echo "RUN"
+
+echo; echo "RUN"
 cat ${reports}SBE-queue-run
 
 if [ -f ${reports}SBE-done ]; then
