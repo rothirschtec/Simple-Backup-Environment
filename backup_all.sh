@@ -48,15 +48,15 @@ for (( x=0; x < ${#b_dirs[@]}; x++ ))
 do
 
     if [[ $1 == "now" ]]; then
-        dobackup[0]=0
-        dobackup[1]=0
-        dobackup[2]=0
-
-    else
-
         dobackup[0]=1
         dobackup[1]=1
         dobackup[2]=1
+
+    else
+
+        dobackup[0]=0
+        dobackup[1]=0
+        dobackup[2]=0
 
         # Possible things
         # 9h 
@@ -88,11 +88,11 @@ do
             exit 1
         fi
 
-        if [ ${dobackup[2]} -eq 1 ] && [ $(( $b_hour % ${b_invs[$x]} )) -eq 0 ]; then
+        if [ ${dobackup[2]} -eq 1 ] && (( $b_hour % ${b_invs[$x]} == 0 )); then
             if [[ $(date +"%M") == "00" ]]; then
                 dobackup[0]=1
             fi
-        elif [ ${dobackup[2]} -eq 2 ] && [ $(( $b_hour % ${b_invs[$x]} )) -eq 0 ]; then
+        elif [ ${dobackup[2]} -eq 2 ] && (( $b_hour % ${b_invs[$x]} == 0 )); then
             dobackup[0]=1
         elif [[ "${b_invs[$x]}" =~ "$b_hour" ]]; then
             dobackup[0]=1
