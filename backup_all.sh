@@ -146,6 +146,11 @@ do
             bash "${hdir}${b_dirs[$x]}/backup_server.sh" "--${b_type[$x]}" &
             echo "Backup for ${b_dirs[$x]} under way..."
 
+        else
+        
+            echo "Backup directory doesn't exist"
+            exit 1
+
         fi
     fi
 done
