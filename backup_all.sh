@@ -69,11 +69,11 @@ do
     elif [[ "${b_invs[$x]}" =~ ^[0-9][0-9][mM]$ ]]; then
         b_invs[x]=$(sed 's/[mM]//g' <<< ${b_invs[$x]})
         b_hour=$(date +"%M")
-        dobackup[2]=1
+        dobackup[2]=2
     elif [[ "${b_invs[$x]}" =~ ^[0-9][mM]$ ]]; then
         b_invs[x]="$(sed 's/[mM]//g' <<< ${b_invs[$x]})"
         b_hour=$(date +"%M")
-        dobackup[2]=1
+        dobackup[2]=2
     elif [[ "${b_invs[$x]}" =~ ^[0-9][0-9]":"[0-9][0-9]$ ]]; then
         b_hour=$(date +"%H:%M")
     else
@@ -82,6 +82,10 @@ do
     fi
 
     if [ ${dobackup[2]} -eq 1 ] && [ $(( $b_hour % ${b_invs[$x]} )) -eq 0 ]; then
+        if [[ $(date +"%M") > 0 ]]; then
+            dobackup[0]=1
+        fi
+    elif [ ${dobackup[2]} -eq 2 ] && [ $(( $b_hour % ${b_invs[$x]} )) -eq 0 ]; then
         dobackup[0]=1
     elif [[ "${b_invs[$x]}" =~ "$b_hour" ]]; then
         dobackup[0]=1
@@ -122,7 +126,7 @@ do
 
         if [ -f ${hdir}${b_dirs[$x]}/backup_server.sh ]; then
     
-            bash "${hdir}${b_dirs[$x]}/backup_server.sh" "--${b_type[$x]}" &
+            echo bash "${hdir}${b_dirs[$x]}/backup_server.sh" "--${b_type[$x]}" &
             echo "Backup for ${b_dirs[$x]} under way..."
 
         fi
