@@ -16,8 +16,16 @@ echo ' - PermitRootLogin yes'
 echo ' - PasswordAuthentication yes'
 echo 'And restart the ssh service afterwards "service ssh restart"'
 read -p 'Approve if done [Enter]'
+echo ''
 
 ssh-copy-id -i ~/.ssh/id_rsa.pub -p $sport $suser@$sip 
+
+echo
+echo 'Change the /etc/ssh/sshd_config back to secure'
+echo ' - PermitRootLogin prohibit-password'
+echo ' - PasswordAuthentication no'
+echo 'And restart the ssh service again "service ssh restart"'
+read -p 'Approve if done [Enter]'
 
 
 bacfol="${hdir}${sname}/"
@@ -65,5 +73,8 @@ fi
 
 echo "..."
 echo "Configuration finished"
-echo "Starting backup process for the first time"
-bash ${bacfol}backup_server.sh
+read -p "Starting backup process for the first time? (Yn): " sp
+
+if [[ $sp != [Nn] ]]; then
+    bash ${bacfol}backup_server.sh &
+fi
