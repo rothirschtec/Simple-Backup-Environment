@@ -101,11 +101,12 @@ do
             exit 1
         fi
 
-        if [ ${dobackup[2]} -eq 1 ] && (( $b_hour % ${b_invs[$x]} == 0 )); then
+        b_hour_cleaned=$( sed 's/^0//g'  <<< $b_hour)
+        if [ ${dobackup[2]} -eq 1 ] && (( $b_hour_cleaned % ${b_invs[$x]} == 0 )); then
             if [[ $(date +"%M") == "00" ]]; then
                 dobackup[0]=1
             fi
-        elif [ ${dobackup[2]} -eq 2 ] && (( $b_hour % ${b_invs[$x]} == 0 )); then
+        elif [ ${dobackup[2]} -eq 2 ] && (( $b_hour_cleaned % ${b_invs[$x]} == 0 )); then
             dobackup[0]=1
         elif [[ "${b_invs[$x]}" =~ "$b_hour" ]]; then
             dobackup[0]=1
