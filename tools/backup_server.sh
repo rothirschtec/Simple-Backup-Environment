@@ -128,10 +128,10 @@ do
 
     # @5.2
     if [ ! -f ${reports}SBE-queue ]; then
-        echo "$$; $(date); ${name};" >> ${reports}SBE-queue
+        echo "$$; $(date); ${name}; ${BUCKET_TYPE};" >> ${reports}SBE-queue
     else
         if ! cat ${reports}SBE-queue | grep $$ &> /dev/null; then
-            echo "$$; $(date); ${name};" >> ${reports}SBE-queue
+            echo "$$; $(date); ${name}; ${BUCKET_TYPE};" >> ${reports}SBE-queue
         fi
     fi
 
