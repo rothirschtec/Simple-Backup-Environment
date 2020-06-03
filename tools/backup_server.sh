@@ -4,10 +4,12 @@
 # backup_server.sh sshCopy
 
 # @1 Set variables
+#   @1.1 Directories
+#   @1.2 Dates and types
 # @2 Load configuration files
 #   @2.1 Default configruation can be change in config file
 # @3 Check if remote server is availabe for backup operations
-# @4 Check if there already exists a backup process for the given server
+# @4 Check if there already exists a backup process for the given server and BUCKET_TYPE
 #   @4.1 Clean queue
 #   @4.2 Check queue
 # @5 Manage queue - To avoid heavy loads
@@ -26,6 +28,7 @@
 
 
 # @1 ------------------------------
+# @1.1
 set -euo pipefail
 cd $(dirname $0)
 sdir="$PWD"
@@ -35,6 +38,25 @@ cd ..
 rdir="$PWD/"
 error=false
 
+
+# @1.2
+BDAYS=1
+BWEEKS=1
+
+CURRENT_DAY=$((10#$(date +%j)))
+CURRENT_WEEK=$((10#$(date +%V)))
+
+if [[ $@ =~ "--weekly" ]]; then
+     BUCKET=$(( CURRENT_WEEK % BWEEKS ))
+     BUCKET_TYPE="weekly"
+elif [[ $@ =~ "--archive" ]]; then
+     BUCKET=$(( CURRENT_WEEK % BWEEKS ))
+     BUCKET_TYPE="weekly"
+     TYPE="tar"
+else
+     BUCKET=$(( CURRENT_DAY % BDAYS ))
+     BUCKET_TYPE="daily"
+fi
 
 
 
@@ -84,7 +106,7 @@ do
 done < ${reports}SBE-queue
 
 # @4.2
-if cat ${reports}SBE-queue | grep ${name} &> /dev/null; then
+if cat ${reports}SBE-queue | grep ${name} | grep ${BUCKET_TYPE} &> /dev/null; then
     echo "Already in queue"
     exit 2
 fi
@@ -106,10 +128,10 @@ do
 
     # @5.2
     if [ ! -f ${reports}SBE-queue ]; then
-        echo "$$; $(date); ${name};" >> ${reports}SBE-queue
+        echo "$$; $(date); ${name}; ${BUCKET_TYPE};" >> ${reports}SBE-queue
     else
         if ! cat ${reports}SBE-queue | grep $$ &> /dev/null; then
-            echo "$$; $(date); ${name};" >> ${reports}SBE-queue
+            echo "$$; $(date); ${name}; ${BUCKET_TYPE};" >> ${reports}SBE-queue
         fi
     fi
 
@@ -176,26 +198,6 @@ cID=$$
 echo "$cID; $(date); ${name};" >> ${reports}SBE-queue-run
 sed -i "/^$cID;.*$/d" ${reports}SBE-queue
 
-
-# # #
-# Initialize vars
-BDAYS=1
-BWEEKS=1
-
-CURRENT_DAY=$((10#$(date +%j)))
-CURRENT_WEEK=$((10#$(date +%V)))
-
-if [[ $@ =~ "--weekly" ]]; then
-     BUCKET=$(( CURRENT_WEEK % BWEEKS ))
-     BUCKET_TYPE="weekly"
-elif [[ $@ =~ "--archive" ]]; then
-     BUCKET=$(( CURRENT_WEEK % BWEEKS ))
-     BUCKET_TYPE="weekly"
-     TYPE="tar"
-else
-     BUCKET=$(( CURRENT_DAY % BDAYS ))
-     BUCKET_TYPE="daily"
-fi
 
 
 if [ $BACKUP -eq 1 ]; then
