@@ -64,7 +64,7 @@ fi
 # # #
 # @3 Check if server is online
 
-ssh $SERVER -p $PORT "echo 2>&1" && online=1 || online=0
+ssh ${USER}@$SERVER -p $PORT "echo 2>&1" && online=1 || online=0
 if [ $online -eq 0 ]; then
 
     echo "Server down"
