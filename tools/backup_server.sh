@@ -5,8 +5,11 @@
 
 # @1 Set variables
 # @2 Load configuration files
+#   @2.1 Default configruation can be change in config file
 # @3 Check if remote server is availabe for backup operations
 # @4 Check if there already exists a backup process for the given server
+#   @4.1 Clean queue
+#   @4.2 Check queue
 # @5 Manage queue - To avoid heavy loads
 #   @5.1 Delete empty lines in queue files
 #   @5.2 Add the remote server to the queue if the PID does not exist
@@ -14,17 +17,16 @@
 #       @5.3.1 Pick next in queue
 #       @5.3.2 Check if the PID used in SBE-queue is really used at the moment (Delete old entries)
 #       @5.3.3 Check if the PID used in SBE-queue-run is really used at the moment (Delete old entries)
-#       @5.3.4 Check if there's already a backup process for the remote server in queue-run
+#       @5.3.4 Check if there's already a backup process for the remote server in queue-run. If so, use next entry in queue
 #       @5.3.5 End loop if queue exists and queue run count is less then stmax
 #       @5.3.6 Wait for 2 seconds if 
+# @6 Write to queue-run
 
 
 
 
-# @1
+# @1 ------------------------------
 set -euo pipefail
-# # #
-# "Dirs and vars"
 cd $(dirname $0)
 sdir="$PWD"
 name=${sdir##*/}
@@ -32,17 +34,15 @@ sdir="${sdir}/"
 cd ..
 rdir="$PWD/"
 error=false
-# # #
 
-# # #
-# Can be configured inside config file
+
+
+
+# @2 ------------------------------
+
+# @2.1
 mail=root
 reports=/tmp/
-
-
-
-# # #
-# @2 Load configs 
 
 if [ -f ${rdir}config ]; then
     source ${rdir}config
@@ -58,12 +58,9 @@ else
     # exit only this subshell
 fi
 
-# # #
 
 
-
-# # #
-# @3 Check if server is online
+# @3 --------------------------
 
 ssh ${USER}@$SERVER -p $PORT "echo 2>&1" && online=1 || online=0
 if [ $online -eq 0 ]; then
@@ -73,24 +70,28 @@ if [ $online -eq 0 ]; then
 
 fi
 
-# # #
 
+# @4 --------------------------
 
-# # #
-# @4 Check if there's already a backup process for the server
+# @4.1
+while read rline
+do
+    runq=$(awk -F";" '{print $1}' <<< $rline)
+    if [ ! -e /proc/${runq} -a /proc/${runq}/exe ]; then
+        sed -i "/^$runq;.*$/d" ${reports}SBE-queue-run
+        sed -i '/^$/d' ${reports}SBE-queue-run
+    fi
+done < ${reports}SBE-queue
 
+# @4.2
 if cat ${reports}SBE-queue | grep ${name} &> /dev/null; then
     echo "Already in queue"
     exit 2
 fi
 
-# # #
 
 
-
-
-# # #
-# @5 Manage queue
+# @5 --------------------------
 stmax=2
 st=$(($stmax+1))
 sti=1
@@ -157,7 +158,9 @@ do
 
         else
 
-            sti=2
+            if [ $(cat ${reports}SBE-queue | wc -l) -gt 1 ]; then
+                sti=2
+            fi
 
         fi
 
@@ -168,9 +171,11 @@ do
 done
 
 
+# @6 ---------------------------
 cID=$$
 echo "$cID; $(date); ${name};" >> ${reports}SBE-queue-run
 sed -i "/^$cID;.*$/d" ${reports}SBE-queue
+
 
 # # #
 # Initialize vars
