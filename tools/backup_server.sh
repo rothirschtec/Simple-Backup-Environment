@@ -20,6 +20,8 @@ error=false
 mail=root
 reports=/tmp/
 
+
+
 # # #
 # Load config
 if [ -f ${rdir}config ]; then
@@ -27,6 +29,44 @@ if [ -f ${rdir}config ]; then
 else
     source ${rdir}tools/config_example
 fi
+if [ -f ${sdir}server.config ]; then
+    mysqlIF="false"
+    source ${sdir}server.config
+else
+    >&2 echo "No server.config found!!!"
+    error=true
+    # exit only this subshell
+fi
+# # #
+
+
+
+# # #
+# Check if server is online
+
+ssh $SERVER -p $PORT "echo 2>&1" && online=1 || online=0
+if [ $online -eq 0 ]; then
+
+    echo "Server down"
+    exit 1
+
+fi
+
+# # #
+
+
+# # #
+# Check if there's already a backup process for the server
+
+if cat ${reports}SBE-queue | grep ${name} &> /dev/null; then
+    echo "Already in queue"
+    exit 2
+fi
+
+# # #
+
+
+
 
 # # #
 # Wait 10 seconds for each existing backup process
@@ -38,11 +78,15 @@ rm -f ${sdir}run
 while [ "$st" -ge "$stmax" ]
 do
 
+    sed -i '/^$/d' ${reports}SBE-queue
+    sed -i '/^$/d' ${reports}SBE-queue-run
+
     if [ ! -f ${reports}SBE-queue ]; then
         echo "$$; $(date); ${name};" >> ${reports}SBE-queue
     else
         if ! cat ${reports}SBE-queue | grep $$ &> /dev/null; then
             echo "$$; $(date); ${name};" >> ${reports}SBE-queue
+            echo "$$; $(date); ${name};"
         fi
     fi
 
@@ -90,7 +134,9 @@ do
 
 done
 
+
 cID=$$
+echo "$cID; $(date); ${name}; run"
 echo "$cID; $(date); ${name};" >> ${reports}SBE-queue-run
 sed -i "/^$cID;.*$/d" ${reports}SBE-queue
 
@@ -98,18 +144,6 @@ sed -i "/^$cID;.*$/d" ${reports}SBE-queue
 # Initialize vars
 BDAYS=1
 BWEEKS=1
-
-# # #
-# Source vars
-    if [ -f ${sdir}server.config ]; then
-        mysqlIF="false"
-        source ${sdir}server.config
-    else
-        >&2 echo "No server.config found!!!"
-        error=true
-        # exit only this subshell
-    fi
-# # #
 
 CURRENT_DAY=$((10#$(date +%j)))
 CURRENT_WEEK=$((10#$(date +%V)))
@@ -241,7 +275,8 @@ if [ $BACKUP -eq 1 ]; then
             echo "Successfull backup: $(date +"%y-%m-%d %H:%M")"
             rm -f ${sdir}run
             sed -i "/^$cID;.*$/d" ${reports}SBE-queue-run
-	    echo "$cID; $(date); ${name}; ${BUCKET_TYPE};" >> ${reports}SBE-done
+
+	        echo "$cID; $(date); ${name}; ${BUCKET_TYPE};" >> ${reports}SBE-done
 
         ) >> ${sdir}bac.log | tee ${rdir}all.log 2> ${sdir}err.log | tee ${rdir}all.log
         # # #
