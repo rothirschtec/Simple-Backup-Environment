@@ -3,6 +3,24 @@
 # You can copy your ssh key to the remote server if you want
 # backup_server.sh sshCopy
 
+# @1 Set variables
+# @2 Load configuration files
+# @3 Check if remote server is availabe for backup operations
+# @4 Check if there already exists a backup process for the given server
+# @5 Manage queue - To avoid heavy loads
+#   @5.1 Delete empty lines in queue files
+#   @5.2 Add the remote server to the queue if the PID does not exist
+#   @5.3 Check if SBE-queue-run exists. If not, backup should start immediately 
+#       @5.3.1 Pick next in queue
+#       @5.3.2 Check if the PID used in SBE-queue is really used at the moment (Delete old entries)
+#       @5.3.3 Check if the PID used in SBE-queue-run is really used at the moment (Delete old entries)
+#       @5.3.4 End loop if queue exists and queue run count is less then stmax
+#       @5.3.5 Wait for 2 seconds if 
+
+
+
+
+# @1
 set -euo pipefail
 # # #
 # "Dirs and vars"
@@ -23,7 +41,8 @@ reports=/tmp/
 
 
 # # #
-# Load config
+# @2 Load configs 
+
 if [ -f ${rdir}config ]; then
     source ${rdir}config
 else
@@ -37,12 +56,13 @@ else
     error=true
     # exit only this subshell
 fi
-# # #
-
-
 
 # # #
-# Check if server is online
+
+
+
+# # #
+# @3 Check if server is online
 
 ssh $SERVER -p $PORT "echo 2>&1" && online=1 || online=0
 if [ $online -eq 0 ]; then
@@ -56,7 +76,7 @@ fi
 
 
 # # #
-# Check if there's already a backup process for the server
+# @4 Check if there's already a backup process for the server
 
 if cat ${reports}SBE-queue | grep ${name} &> /dev/null; then
     echo "Already in queue"
@@ -69,8 +89,7 @@ fi
 
 
 # # #
-# Wait 10 seconds for each existing backup process
-# To avoid heavy loads
+# @5 Manage queue
 stmax=2
 st=$(($stmax+1))
 sti=1
@@ -78,36 +97,38 @@ rm -f ${sdir}run
 while [ "$st" -ge "$stmax" ]
 do
 
+
+    # @5.1
     sed -i '/^$/d' ${reports}SBE-queue
     sed -i '/^$/d' ${reports}SBE-queue-run
 
+    # @5.2
     if [ ! -f ${reports}SBE-queue ]; then
         echo "$$; $(date); ${name};" >> ${reports}SBE-queue
     else
         if ! cat ${reports}SBE-queue | grep $$ &> /dev/null; then
             echo "$$; $(date); ${name};" >> ${reports}SBE-queue
-            echo "$$; $(date); ${name};"
         fi
     fi
 
 
+    # @5.3
     if [ -f ${reports}SBE-queue-run ]; then
 
-        queue=$(sed -n $(($(cat ${reports}SBE-queue-run | wc -l) + 1))p ${reports}SBE-queue);
+        # @5.3.1
+        queue=$(tail -1 ${reports}SBE-queue);
 
-
-        # Check if first to $stmax in queue exists
+        # @5.3.2
         while read rline
         do
             runq=$(awk -F";" '{print $1}' <<< $rline)
-            # Check if first in queue exists
             if [ ! -e /proc/${runq} -a /proc/${runq}/exe ]; then
                 sed -i "/^$runq;.*$/d" ${reports}SBE-queue
                 sed -i '/^$/d' ${reports}SBE-queue
             fi
         done < ${reports}SBE-queue
 
-
+        # @5.3.3
         while read rline
         do
             runq=$(awk -F";" '{print $1}' <<< $rline)
@@ -118,12 +139,12 @@ do
         done < ${reports}SBE-queue-run
 
 
-        # End loop if queue exists and queue run count is less then stmax
+        # @5.3.4
         if [[ $queue =~ "$$;" ]]; then
             st=$(cat ${reports}SBE-queue-run | wc -l)
         fi
 
-        # Sleep if in queue
+        # @5.3.5
         if [ $st -ge $stmax ]; then
             sleep 2
         fi
@@ -136,7 +157,6 @@ done
 
 
 cID=$$
-echo "$cID; $(date); ${name}; run"
 echo "$cID; $(date); ${name};" >> ${reports}SBE-queue-run
 sed -i "/^$cID;.*$/d" ${reports}SBE-queue
 
