@@ -2,8 +2,6 @@
 
 cd $(dirname $0)
 hdir="$PWD/"
-tdir="/tmp/SBE/$RANDOM/"
-mkdir -p $tdir
 
 
 # # #
@@ -160,5 +158,4 @@ do
     fi
 done
 
-rm -rf $tdir
 exit 0
