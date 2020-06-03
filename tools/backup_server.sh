@@ -14,8 +14,9 @@
 #       @5.3.1 Pick next in queue
 #       @5.3.2 Check if the PID used in SBE-queue is really used at the moment (Delete old entries)
 #       @5.3.3 Check if the PID used in SBE-queue-run is really used at the moment (Delete old entries)
-#       @5.3.4 End loop if queue exists and queue run count is less then stmax
-#       @5.3.5 Wait for 2 seconds if 
+#       @5.3.4 Check if there's already a backup process for the remote server in queue-run
+#       @5.3.5 End loop if queue exists and queue run count is less then stmax
+#       @5.3.6 Wait for 2 seconds if 
 
 
 
@@ -116,7 +117,7 @@ do
     if [ -f ${reports}SBE-queue-run ]; then
 
         # @5.3.1
-        queue=$(tail -1 ${reports}SBE-queue);
+        queue=$(tail -${sti} ${reports}SBE-queue);
 
         # @5.3.2
         while read rline
@@ -140,13 +141,24 @@ do
 
 
         # @5.3.4
-        if [[ $queue =~ "$$;" ]]; then
-            st=$(cat ${reports}SBE-queue-run | wc -l)
-        fi
+        if ! cat ${reports}SBE-queue-run | grep ${name} &> /dev/null; then
 
-        # @5.3.5
-        if [ $st -ge $stmax ]; then
-            sleep 2
+            # @5.3.5
+            if [[ $queue =~ "$$;" ]]; then
+                st=$(cat ${reports}SBE-queue-run | wc -l)
+            fi
+
+            # @5.3.6
+            if [ $st -ge $stmax ]; then
+                sleep 2
+            fi
+
+            sti=1
+
+        else
+
+            sti=2
+
         fi
 
     else
