@@ -73,3 +73,9 @@ fi
 
 echo "..."
 echo "Configuration finished"
+
+
+echo "..."
+echo "Starting first backup"
+/bin/bash ${bacfol}backup_server.sh &
+echo "You can kill the process with - kill $!"
