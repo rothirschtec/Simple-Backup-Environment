@@ -23,6 +23,7 @@
 #       @5.3.5 End loop if queue exists and queue run count is less then stmax
 #       @5.3.6 Wait for 2 seconds if 
 # @6 Write to queue-run
+# @7 Backup
 
 
 
@@ -200,6 +201,7 @@ sed -i "/^$cID;.*$/d" ${reports}SBE-queue
 
 
 
+# @7 ---------------------------
 if [ $BACKUP -eq 1 ]; then
 
     # # #
@@ -210,7 +212,7 @@ if [ $BACKUP -eq 1 ]; then
 
     if [[ $@ =~ "--sshCopy" ]]; then
 
-	ssh-copy-id -i ~/.ssh/id_rsa.pub -p $PORT $USER@$SERVER
+	    ssh-copy-id -i ~/.ssh/id_rsa.pub -p $PORT $USER@$SERVER
 
     elif [[ $error == false ]]; then
 
