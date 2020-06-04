@@ -184,5 +184,6 @@ if [[ $daycount == $occurrence ]]; then
     echo "All $daycount backups successfull ($occurrence)"
     echo
 else
-    echo "WARNING: There should've been $daycount backup operations but $occurrence operations are recognized"
+    echo "Backup problem: $daycount backups configured, $occurrence executed"
+    echo -e "Subject: WARNING: Backup problem on $HOSTNAME\n\n There should've been $daycount backup operations but $occurrence operations are recognized" | sendmail $mail
 fi
