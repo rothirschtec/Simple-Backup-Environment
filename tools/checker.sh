@@ -15,6 +15,14 @@ else
     source ${hdir}tools/config_example
 fi
 
+
+# # #
+# Check done file
+if [ ! -f ${report}SBE-done ]; then
+    echo "No backups done"
+    echo -e "Subject: WARNING: Backup problem on $HOSTNAME\n\n There's no SBE-done file" | sendmail $mail
+fi
+
 # # #
 # Parse backup.xml
 if [ -f ${hdir}backup.xml ]; then
