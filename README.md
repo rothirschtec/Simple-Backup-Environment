@@ -1,12 +1,10 @@
 # RT-Blog-SBE (alpha)
 
-## SBE or Simple Backup Environment
-
+***SBE or Simple Backup Environment***
 A backup solution with *rsync* to take full backups.
 
-### Dependencies
+## Dependencies
 Uses rsync over ssh. So you need to have those service installed on the host and the server. You also need to have a valid user SSH key for the host on the server that is allowed to do a system backup.
-
 
 - ssh
 - rsync
@@ -16,16 +14,16 @@ Uses rsync over ssh. So you need to have those service installed on the host and
 - mysql-client or mariadb-client
 
 
-### backup.xml
+## backup.xml
 
     cp tools/backup.xml-example backup.xml
 
-### How to use
+## How to use
 Start with 
 
     sudo ./tools/add_host.sh
 
-### Crontab
+## Crontab
 You can add a crontab to execute the script:
 
 	crontab -e
@@ -36,7 +34,7 @@ You can add a crontab to execute the script:
 	0 6 * * * bash <PathToRT-Blog-SBE>/tools/checker.sh
 
 
-### qnap
+## qnap
 You can use this script on a qnap NAS. Connect to the NAS via SSH. You'll need git installed on the qnap NAS.
 Therfore you can install qpkg via the app store to be able to build the entware package.
 
@@ -56,7 +54,6 @@ Therfore you can install qpkg via the app store to be able to build the entware 
 	opkg install mariadb-client mariadb-client-extra
 
 And don't forget to set your e-mail settings in qnap control panel. *ControlPanel > Notification Center > Service Account and Device Pairing > E-mail > Add SMPT Service*
-
 
 ## qNap crontab
 
