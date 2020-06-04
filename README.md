@@ -43,7 +43,7 @@ You can use following intervals
 - 13:12, Use exact time to create a backup on this time
 
 ### <date>
-You can use following intervals
+You can use following dates
 
 - Wed,Thu: Use short names for any week day you want to configure the setup. You can use multiple week days separated by comma.
 - 22: Use an exact day of month to do you backup on this day
