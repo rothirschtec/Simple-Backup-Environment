@@ -18,6 +18,43 @@ Uses rsync over ssh. So you need to have those service installed on the host and
 
     cp tools/backup.xml-example backup.xml
 
+You can manage your backup operations with this simple xml file. Configure it as followed:
+
+    <server>
+        <backupdirectory>backup directory name</backupdirectory>
+        <intervall>4h</intervall>
+        <date>Fri</date>
+        <type>daily</type>
+    </server>
+    <server>
+        <backupdirectory>backup directory name</backupdirectory>
+        <intervall>03:15</intervall>
+        <date>Wed,Thu,Fri</date>
+    ...
+
+### <backupdirectory>
+This is the directory name created with ´./tools/add_host.sh´ script.
+
+### <intervall>
+You can use following intervals
+
+- 4h, Use a full hour and add a h to it. *e.g. 4h to make a backup every 4 hours. 10 to make a backup every 10 hours.*
+- 40m, Use a minutes and add a h to it. *e.g. 40m to make a backup every 40 minutes.*
+- 13:12, Use exact time to create a backup on this time
+
+### <date>
+You can use following intervals
+
+- Wed,Thu: Use short names for any week day you want to configure the setup. You can use multiple week days separated by comma.
+- 22: Use an exact day of month to do you backup on this day
+
+### <type>
+This option helps you to categorize your backups
+
+- daily: Saves your backup to <backupdirectory>rotate_bak/daily/
+- weekly: Saves your backup to <backupdirectory>rotate_bak/weekly/
+- monthly: Saves your backup to <backupdirectory>rotate_bak/monthly/
+
 ## How to use
 Start with 
 

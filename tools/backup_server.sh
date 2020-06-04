@@ -43,21 +43,27 @@ error=false
 # @1.2
 BDAYS=1
 BWEEKS=1
+BMONTHS=1
 
 CURRENT_DAY=$((10#$(date +%j)))
 CURRENT_WEEK=$((10#$(date +%V)))
+CURRENT_MONTH=$((10#$(date +%m)))
 
 if [[ $@ =~ "--weekly" ]]; then
      BUCKET=$(( CURRENT_WEEK % BWEEKS ))
      BUCKET_TYPE="weekly"
+elif [[ $@ =~ "--monthly" ]]; then
+     BUCKET=$(( CURRENT_MONTH % BMONTHS ))
+     BUCKET_TYPE="monthly"
 elif [[ $@ =~ "--archive" ]]; then
      BUCKET=$(( CURRENT_WEEK % BWEEKS ))
-     BUCKET_TYPE="weekly"
+     BUCKET_TYPE="archive"
      TYPE="tar"
 else
      BUCKET=$(( CURRENT_DAY % BDAYS ))
      BUCKET_TYPE="daily"
 fi
+
 
 
 
@@ -248,7 +254,7 @@ if [ $BACKUP -eq 1 ]; then
                         /bin/bash ${rdir}tools/mysql-backup.sh "${sdir}mysql.cnf" "${bmdi}" "$sdir" "$MBWEEKS"
                     else
                         /bin/bash ${rdir}tools/mysql-backup.sh "${sdir}mysql.cnf" "${bmdi}" "$sdir" "$MBDAYS"
-                fi
+                    fi
                    
                 fi
                 echo "kill tunnel with $pid..."
