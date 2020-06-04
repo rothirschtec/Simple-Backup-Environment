@@ -171,7 +171,7 @@ fi
 daycount=$(grep -o -i $w_day <<< ${b_dats[@]} | wc -l)
 
 if [[ $daycount == $occurrence ]]; then
-    echo "All backups successfull"
+    echo "All $daycount backups successfull ($occurrence)"
     echo
 else
     echo "WARNING: There should've been $daycount backup operations but $occurrence operations are recognized"
