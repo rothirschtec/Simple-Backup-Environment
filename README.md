@@ -3,6 +3,8 @@
 ***SBE or Simple Backup Environment***
 A backup solution using *rsync* to take full backups of Debian/Armbian systems.
 
+This script is meant to run on a *backup server*. From this, any backup will be taken via SSH and rsync from the remote hosts.
+
 ## Dependencies
 Uses rsync over ssh. So you need to have those service installed on the host and the server. You also need to have a valid user SSH key for the host on the server that is allowed to do a system backup.
 
@@ -38,7 +40,7 @@ This is the directory name created with ´./tools/add_host.sh´ script.
 ### intervall
 You can use following intervals
 
-- 4h, Use a full hour and add a h to it. *e.g. 4h to make a backup every 4 hours. 10 to make a backup every 10 hours.*
+- 4h, Use a full hour and add a h to it. *e.g. 4h to make a backup every 4 hours. 10h to make a backup every 10 hours.*
 - 40m, Use a minutes and add a h to it. *e.g. 40m to make a backup every 40 minutes.*
 - 13:12, Use exact time to create a backup on this time
 
