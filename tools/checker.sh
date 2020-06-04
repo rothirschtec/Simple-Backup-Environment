@@ -32,6 +32,7 @@ else
 fi
 
 
+
 # Clean backup operations
 rm -f ${hdir}.backup.operations; touch ${hdir}.backup.operations;
 
@@ -62,6 +63,7 @@ do
             echo "  <type>${b_type[$x]}</type>"                             >> ${hdir}.backup.operations
             echo "</server>"                                                >> ${hdir}.backup.operations
         done
+
 
     # # #
     # Dismantle minutes
@@ -110,11 +112,11 @@ do
 
     fi
                         
-
-
-
-
 done
+
+
+
+
 
 # # #
 # Parse .backup.operations
@@ -126,7 +128,17 @@ b_type=($(grep -oP '(?<=<type>).*?(?=</type>)' ${hdir}.backup.operations))
 
 
 echo There are ${#b_dirs[@]} entries
-w_day=$(date -d "1 day ago" +%a)
+
+
+# # #
+# bugfix for qnap NAS
+# -d '1 day' or -d 'yesterday' or -d '1 day ago' doesn't work
+# w_day=$(date -d '1 day' +'%a')
+# bugfix uses seconds
+today=`date +"%s"`
+yesterday=`expr $today - 86400`
+w_day=`date --date="@${yesterday}" +"%a"`
+
 occurrence=0
 
 
@@ -136,14 +148,12 @@ find_dat=$(sed 's/,/ /g ' <<< ${b_dats[@]})
 find_dat=$(echo "${find_dat[@]}" | tr ' ' '\n' | sort -u | tr '\n' ' ')
 if [[ ${find_dat[@]} =~ $w_day ]]; then
 
-
     # Loop through servernames from .backup.operations
     for (( x=0; x < ${#b_dirs[@]}; x++ ))
     do
-        # Loop through backup logs
-        while read logline 
-        do
 
+        # Loop through backup logs
+	cat ${reports}SBE-done | grep ${b_dirs[$x]} | while read -r logline ; do
 
             time=$(awk -F";" '{print $2}' <<< $logline)
             b_day=$(awk -F" " '{print $1}' <<< $time)
@@ -162,7 +172,7 @@ if [[ ${find_dat[@]} =~ $w_day ]]; then
 
             fi
 
-        done < <(cat ${reports}SBE-done | grep ${b_dirs[$x]})
+        done
     done
 
 fi
