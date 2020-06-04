@@ -147,7 +147,7 @@ do
     if [ -f ${reports}SBE-queue-run ]; then
 
         # @5.3.1
-        queue=$(tail -${sti} ${reports}SBE-queue);
+        queue=$(sed -n ${sti}p ${reports}SBE-queue);
 
         # @5.3.2
         while read rline
