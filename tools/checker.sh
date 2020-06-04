@@ -21,6 +21,7 @@ fi
 if [ ! -f ${report}SBE-done ]; then
     echo "No backups done"
     echo -e "Subject: WARNING: Backup problem on $HOSTNAME\n\n There's no SBE-done file" | sendmail $mail
+    exit 2
 fi
 
 # # #
