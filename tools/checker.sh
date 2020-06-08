@@ -128,9 +128,6 @@ do
 done
 
 
-exit 0
-
-
 # # #
 # Parse .backup.operations
 b_dirs=($(grep -oP '(?<=<backupdirectory>).*?(?=</backupdirectory>)' ${hdir}.backup.operations))
