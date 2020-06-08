@@ -48,6 +48,7 @@ BMONTHS=1
 CURRENT_DAY=$((10#$(date +%j)))
 CURRENT_WEEK=$((10#$(date +%V)))
 CURRENT_MONTH=$((10#$(date +%m)))
+START_DATE=$(date)
 
 if [[ $@ =~ "--weekly" ]]; then
      BUCKET=$(( CURRENT_WEEK % BWEEKS ))
@@ -135,10 +136,10 @@ do
 
     # @5.2
     if [ ! -f ${reports}SBE-queue ]; then
-        echo "$$; $(date); ${name}; ${BUCKET_TYPE};" >> ${reports}SBE-queue
+        echo "$$; ${START_DATE}; ${name}; ${BUCKET_TYPE};" >> ${reports}SBE-queue
     else
         if ! cat ${reports}SBE-queue | grep $$ &> /dev/null; then
-            echo "$$; $(date); ${name}; ${BUCKET_TYPE};" >> ${reports}SBE-queue
+            echo "$$; ${START_DATE}; ${name}; ${BUCKET_TYPE};" >> ${reports}SBE-queue
         fi
     fi
 
@@ -202,7 +203,7 @@ done
 
 # @6 ---------------------------
 cID=$$
-echo "$cID; $(date); ${name};" >> ${reports}SBE-queue-run
+echo "$cID; ${START_DATE}; ${name};" >> ${reports}SBE-queue-run
 sed -i "/^$cID;.*$/d" ${reports}SBE-queue
 
 
@@ -323,7 +324,7 @@ if [ $BACKUP -eq 1 ]; then
             rm -f ${sdir}run
             sed -i "/^$cID;.*$/d" ${reports}SBE-queue-run
 
-	        echo "$cID; $(date); ${name}; ${BUCKET_TYPE};" >> ${reports}SBE-done
+	    echo "$cID; ${START_DATE}; ${name}; ${BUCKET_TYPE}; $(date);" >> ${reports}SBE-done
 
         ) >> ${sdir}bac.log | tee ${rdir}all.log 2> ${sdir}err.log | tee ${rdir}all.log
         # # #
