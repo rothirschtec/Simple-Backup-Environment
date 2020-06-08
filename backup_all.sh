@@ -119,25 +119,25 @@ do
         # Mo,We,Fr
         # 22
         if [[ "${b_dats[$x]}" =~ ^[0-9][0-9]$ ]]; then
-            b_hour=$(date +"%m")
+            b_dat=$(date +"%m")
         elif [[ "${b_dats[$x]}" =~ ^[0-9]$ ]]; then
             b_dats[x]="0${b_dats[$x]}"
-            b_hour=$(date +"%m")
+            b_dat=$(date +"%m")
         elif [[ "${b_dats[$x]}" =~ ^[A-Z][a-z][a-z][a-z][a-z]* ]]; then
-            b_hour=$(date +"%A")
+            b_dat=$(date +"%A")
         elif [[ "${b_dats[$x]}" =~ ^[A-Z][a-z][a-z]$ ]]; then
-            b_hour=$(date +"%a")
+            b_dat=$(date +"%a")
         elif [[ "${b_dats[$x]}" =~ ^[A-Z][a-z][a-z]","* ]]; then
-            b_hour=$(date +"%a")
+            b_dat=$(date +"%a")
         else
             echo "Unknown configuration: ${b_dats[$x]}"
             exit 1
         fi
 
-        if [[ "${b_dats[$x]}" =~ "$b_hour" ]]; then
+        if [[ "${b_dats[$x]}" =~ "$b_dat" ]]; then
             dobackup[1]=1
         else
-            echo "Not valid ${b_dats[$x]} =~ $b_hour"
+            echo "Not valid ${b_dats[$x]} =~ $b_dat"
         fi
 
     fi
