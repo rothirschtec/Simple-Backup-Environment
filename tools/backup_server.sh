@@ -346,12 +346,12 @@ if [ $BACKUP -eq 1 ]; then
     # End message
     if [[ "$@" =~ "--log" ]]; then
         # Add disk space stats of backup filesystem
-        echo -e "Subject: Backup Success with $name on $HOSTNAME\n\n $(cat ${sdir}bac.log)" | sendmail $mail
+        echo -e "Subject: Backup Success with $name on $HOSTNAME\n\n $(cat ${sdir}bac.log)" | /usr/sbin/sendmail $mail
 
     fi
     if [ $(cat ${sdir}err.log | wc -w | awk '{ print $1 }') -gt 0 ]; then
         echo "Script stopped: $(date +"%y-%m-%d %H:%M")" >> ${sdir}err.log
-        echo -e "Subject: Backup Error with $name on $HOSTNAME\n\n $(cat ${sdir}err.log)" | sendmail $mail
+        echo -e "Subject: Backup Error with $name on $HOSTNAME\n\n $(cat ${sdir}err.log)" | /usr/sbin/sendmail $mail
 	exit 1
     fi
     # # #
