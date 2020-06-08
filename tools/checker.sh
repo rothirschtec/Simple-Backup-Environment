@@ -87,25 +87,27 @@ do
             for (( hl=1; hl <= $minloop; hl++ ))
             do
 
-                echo "<server>"                                                 >> ${hdir}.backup.operations
-                echo "  <backupdirectory>${b_dirs[$x]}</backupdirectory>"       >> ${hdir}.backup.operations
+		minute=$(( $hl *  $minutes ))
+		if [[ $minute < 60 ]]; then
+			echo "<server>"                                                 >> ${hdir}.backup.operations
+			echo "  <backupdirectory>${b_dirs[$x]}</backupdirectory>"       >> ${hdir}.backup.operations
 
-                if [[ "${hours}" =~ ^[0-9]$ ]]; then
-                    hour="0${hours}"
-                else
-                    hour="${hours}"
-                fi
-                minute=$(( $hl *  $minutes ))
-                if [[ "${minute}" =~ ^[0-9]$ ]]; then
-                    echo "  <intervall>${hour}:0${minute}</intervall>"        >> ${hdir}.backup.operations
-                else
-                    echo "  <intervall>${hour}:${minute}</intervall>"         >> ${hdir}.backup.operations
-                fi
+			if [[ "${hours}" =~ ^[0-9]$ ]]; then
+			    hour="0${hours}"
+			else
+			    hour="${hours}"
+			fi
+			if [[ "${minute}" =~ ^[0-9]$ ]]; then
+			    echo "  <intervall>${hour}:0${minute}</intervall>"        >> ${hdir}.backup.operations
+			else
+			    echo "  <intervall>${hour}:${minute}</intervall>"         >> ${hdir}.backup.operations
+			fi
 
 
-                echo "  <date>${b_dats[$x]}</date>"                             >> ${hdir}.backup.operations
-                echo "  <type>${b_type[$x]}</type>"                             >> ${hdir}.backup.operations
-                echo "</server>"                                                >> ${hdir}.backup.operations
+			echo "  <date>${b_dats[$x]}</date>"                             >> ${hdir}.backup.operations
+			echo "  <type>${b_type[$x]}</type>"                             >> ${hdir}.backup.operations
+			echo "</server>"                                                >> ${hdir}.backup.operations
+		fi
            
             done 
         done
@@ -126,7 +128,7 @@ do
 done
 
 
-
+exit 0
 
 
 # # #
