@@ -6,6 +6,8 @@ cd ..
 hdir="$PWD/"
 echo
 
+# Declare Variante
+rm -f ${hdir}.backups-done; touch ${hdir}.backups-done
 
 # # #
 # Parse config
@@ -148,7 +150,7 @@ today=`date +"%s"`
 yesterday=`expr $today - 86400`
 w_day=`date --date="@${yesterday}" +"%a"`
 
-occurrence=0
+
 
 
 # # #
@@ -173,8 +175,8 @@ if [[ ${find_dat[@]} =~ $w_day ]]; then
      
                 if [[ $b_tim =~ ${b_invs[$x]} ]]; then
                     
-                    echo $logline 
-                    (( occurrence++ ))
+                    echo $logline
+                    echo $logline >> ${hdir}.backups-done
 
                 fi
 
@@ -186,6 +188,7 @@ if [[ ${find_dat[@]} =~ $w_day ]]; then
 fi
 
 
+occurrence=$(cat ${hdir}.backups-done | wc -l)
 daycount=$(grep -o -i $w_day <<< ${b_dats[@]} | wc -l)
 
 if [[ $daycount == $occurrence ]]; then
