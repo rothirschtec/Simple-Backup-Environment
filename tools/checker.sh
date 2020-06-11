@@ -22,7 +22,7 @@ fi
 # Check done file
 if [ ! -f ${reports}SBE-done ]; then
     echo "No backups done"
-    echo -e "Subject: WARNING: Backup problem on $HOSTNAME\n\n There's no SBE-done file" | $(which sendmail) $mail
+    echo -e "Subject: WARNING: Backup problem on $HOSTNAME\n\n There's no SBE-done file" | /usr/sbin/sendmail $mail
     exit 2
 fi
 
@@ -195,5 +195,5 @@ if [[ $daycount == $occurrence ]]; then
     echo
 else
     echo "Backup problem: $daycount backups configured, $occurrence executed"
-    echo -e "Subject: WARNING: Backup problem on $HOSTNAME\n\n There should've been $daycount backup operations but $occurrence operations are recognized" | $(which sendmail) $mail
+    echo -e "Subject: WARNING: Backup problem on $HOSTNAME\n\n There should've been $daycount backup operations but $occurrence operations are recognized" | /usr/sbin/sendmail $mail
 fi
