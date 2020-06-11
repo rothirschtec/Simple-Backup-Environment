@@ -5,6 +5,9 @@ sdir="$PWD/"
 cd ..
 hdir="$PWD/"
 
+echo "Update git repository"
+git pull
+
 for x in ${hdir}*; do
 
       if [ -d $x ] && [[ ! $x =~ "tools" ]]; then 
