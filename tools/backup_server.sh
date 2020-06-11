@@ -89,127 +89,127 @@ else
 fi
 
 
-
-# @3 --------------------------
-
-ssh ${USER}@$SERVER -p $PORT "echo 2>&1" && online=1 || online=0
-if [ $online -eq 0 ]; then
-
-    echo "Server down"
-    exit 1
-
-fi
-
-
-# @4 --------------------------
-
-# @4.1
-while read rline
-do
-    runq=$(awk -F";" '{print $1}' <<< $rline)
-    if [ ! -e /proc/${runq} -a /proc/${runq}/exe ]; then
-        sed -i "/^$runq;.*$/d" ${reports}SBE-queue-run
-        sed -i '/^$/d' ${reports}SBE-queue-run
-    fi
-done < ${reports}SBE-queue
-
-# @4.2
-if cat ${reports}SBE-queue | grep ${name} | grep ${BUCKET_TYPE} &> /dev/null; then
-    echo "Already in queue"
-    exit 2
-fi
-
-
-
-# @5 --------------------------
-stmax=2
-st=$(($stmax+1))
-sti=1
-rm -f ${sdir}run
-while [ "$st" -ge "$stmax" ]
-do
-
-
-    # @5.1
-    sed -i '/^$/d' ${reports}SBE-queue
-    sed -i '/^$/d' ${reports}SBE-queue-run
-
-    # @5.2
-    if [ ! -f ${reports}SBE-queue ]; then
-        echo "$$; ${START_DATE}; ${name}; ${BUCKET_TYPE};" >> ${reports}SBE-queue
-    else
-        if ! cat ${reports}SBE-queue | grep $$ &> /dev/null; then
-            echo "$$; ${START_DATE}; ${name}; ${BUCKET_TYPE};" >> ${reports}SBE-queue
-        fi
-    fi
-
-
-    # @5.3
-    if [ -f ${reports}SBE-queue-run ]; then
-
-        # @5.3.1
-        queue=$(sed -n ${sti}p ${reports}SBE-queue);
-
-        # @5.3.2
-        while read rline
-        do
-            runq=$(awk -F";" '{print $1}' <<< $rline)
-            if [ ! -e /proc/${runq} -a /proc/${runq}/exe ]; then
-                sed -i "/^$runq;.*$/d" ${reports}SBE-queue
-                sed -i '/^$/d' ${reports}SBE-queue
-            fi
-        done < ${reports}SBE-queue
-
-        # @5.3.3
-        while read rline
-        do
-            runq=$(awk -F";" '{print $1}' <<< $rline)
-            if [ ! -e /proc/${runq} -a /proc/${runq}/exe ]; then
-                sed -i "/^$runq;.*$/d" ${reports}SBE-queue-run
-                sed -i '/^$/d' ${reports}SBE-queue-run
-            fi
-        done < ${reports}SBE-queue-run
-
-
-        # @5.3.4
-        if ! cat ${reports}SBE-queue-run | grep ${name} &> /dev/null; then
-
-            # @5.3.5
-            if [[ $queue =~ "$$;" ]]; then
-                st=$(cat ${reports}SBE-queue-run | wc -l)
-            fi
-
-            # @5.3.6
-            if [ $st -ge $stmax ]; then
-                sleep 2
-            fi
-
-            sti=1
-
-        else
-
-            if [ $(cat ${reports}SBE-queue | wc -l) -gt 1 ]; then
-                sti=2
-            fi
-
-        fi
-
-    else
-        st=$(($stmax-1))
-    fi
-
-done
-
-
-# @6 ---------------------------
-cID=$$
-echo "$cID; ${START_DATE}; ${name};" >> ${reports}SBE-queue-run
-sed -i "/^$cID;.*$/d" ${reports}SBE-queue
-
-
-
 # @7 ---------------------------
 if [ $BACKUP -eq 1 ]; then
+
+	# @3 --------------------------
+
+	ssh ${USER}@$SERVER -p $PORT "echo 2>&1" && online=1 || online=0
+	if [ $online -eq 0 ]; then
+
+	    echo "Server down"
+	    exit 1
+
+	fi
+
+
+	# @4 --------------------------
+
+	# @4.1
+	while read rline
+	do
+	    runq=$(awk -F";" '{print $1}' <<< $rline)
+	    if [ ! -e /proc/${runq} -a /proc/${runq}/exe ]; then
+		sed -i "/^$runq;.*$/d" ${reports}SBE-queue-run
+		sed -i '/^$/d' ${reports}SBE-queue-run
+	    fi
+	done < ${reports}SBE-queue
+
+	# @4.2
+	if cat ${reports}SBE-queue | grep ${name} | grep ${BUCKET_TYPE} &> /dev/null; then
+	    echo "Already in queue"
+	    exit 2
+	fi
+
+
+
+	# @5 --------------------------
+	stmax=2
+	st=$(($stmax+1))
+	sti=1
+	rm -f ${sdir}run
+	while [ "$st" -ge "$stmax" ]
+	do
+
+
+	    # @5.1
+	    sed -i '/^$/d' ${reports}SBE-queue
+	    sed -i '/^$/d' ${reports}SBE-queue-run
+
+	    # @5.2
+	    if [ ! -f ${reports}SBE-queue ]; then
+		echo "$$; ${START_DATE}; ${name}; ${BUCKET_TYPE};" >> ${reports}SBE-queue
+	    else
+		if ! cat ${reports}SBE-queue | grep $$ &> /dev/null; then
+		    echo "$$; ${START_DATE}; ${name}; ${BUCKET_TYPE};" >> ${reports}SBE-queue
+		fi
+	    fi
+
+
+	    # @5.3
+	    if [ -f ${reports}SBE-queue-run ]; then
+
+		# @5.3.1
+		queue=$(sed -n ${sti}p ${reports}SBE-queue);
+
+		# @5.3.2
+		while read rline
+		do
+		    runq=$(awk -F";" '{print $1}' <<< $rline)
+		    if [ ! -e /proc/${runq} -a /proc/${runq}/exe ]; then
+			sed -i "/^$runq;.*$/d" ${reports}SBE-queue
+			sed -i '/^$/d' ${reports}SBE-queue
+		    fi
+		done < ${reports}SBE-queue
+
+		# @5.3.3
+		while read rline
+		do
+		    runq=$(awk -F";" '{print $1}' <<< $rline)
+		    if [ ! -e /proc/${runq} -a /proc/${runq}/exe ]; then
+			sed -i "/^$runq;.*$/d" ${reports}SBE-queue-run
+			sed -i '/^$/d' ${reports}SBE-queue-run
+		    fi
+		done < ${reports}SBE-queue-run
+
+
+		# @5.3.4
+		if ! cat ${reports}SBE-queue-run | grep ${name} &> /dev/null; then
+
+		    # @5.3.5
+		    if [[ $queue =~ "$$;" ]]; then
+			st=$(cat ${reports}SBE-queue-run | wc -l)
+		    fi
+
+		    # @5.3.6
+		    if [ $st -ge $stmax ]; then
+			sleep 2
+		    fi
+
+		    sti=1
+
+		else
+
+		    if [ $(cat ${reports}SBE-queue | wc -l) -gt 1 ]; then
+			sti=2
+		    fi
+
+		fi
+
+	    else
+		st=$(($stmax-1))
+	    fi
+
+	done
+
+
+	# @6 ---------------------------
+	cID=$$
+	echo "$cID; ${START_DATE}; ${name};" >> ${reports}SBE-queue-run
+	sed -i "/^$cID;.*$/d" ${reports}SBE-queue
+
+
+
 
     # # #
     # Define shares
