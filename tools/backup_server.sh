@@ -89,7 +89,6 @@ else
 fi
 
 
-# @7 ---------------------------
 if [ $BACKUP -eq 1 ]; then
 
 	# @3 --------------------------
@@ -222,6 +221,9 @@ if [ $BACKUP -eq 1 ]; then
 	    ssh-copy-id -i ~/.ssh/id_rsa.pub -p $PORT $USER@$SERVER
 
     elif [[ $error == false ]]; then
+
+
+	# @7 ---------------------------
 
         # # #
         # Remove old logs
