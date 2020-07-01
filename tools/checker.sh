@@ -6,6 +6,8 @@ cd ..
 hdir="$PWD/"
 echo
 
+# Declare Variante
+rm -f ${hdir}.backups-done; touch ${hdir}.backups-done
 
 # # #
 # Parse config
@@ -20,7 +22,7 @@ fi
 # Check done file
 if [ ! -f ${reports}SBE-done ]; then
     echo "No backups done"
-    echo -e "Subject: WARNING: Backup problem on $HOSTNAME\n\n There's no SBE-done file" | sendmail $mail
+    echo -e "Subject: WARNING: Backup problem on $HOSTNAME\n\n There's no SBE-done file" | /usr/sbin/sendmail $mail
     exit 2
 fi
 
@@ -85,25 +87,27 @@ do
             for (( hl=1; hl <= $minloop; hl++ ))
             do
 
-                echo "<server>"                                                 >> ${hdir}.backup.operations
-                echo "  <backupdirectory>${b_dirs[$x]}</backupdirectory>"       >> ${hdir}.backup.operations
+		minute=$(( $hl *  $minutes ))
+		if [[ $minute < 60 ]]; then
+			echo "<server>"                                                 >> ${hdir}.backup.operations
+			echo "  <backupdirectory>${b_dirs[$x]}</backupdirectory>"       >> ${hdir}.backup.operations
 
-                if [[ "${hours}" =~ ^[0-9]$ ]]; then
-                    hour="0${hours}"
-                else
-                    hour="${hours}"
-                fi
-                minute=$(( $hl *  $minutes ))
-                if [[ "${minute}" =~ ^[0-9]$ ]]; then
-                    echo "  <intervall>${hour}:0${minute}</intervall>"        >> ${hdir}.backup.operations
-                else
-                    echo "  <intervall>${hour}:${minute}</intervall>"         >> ${hdir}.backup.operations
-                fi
+			if [[ "${hours}" =~ ^[0-9]$ ]]; then
+			    hour="0${hours}"
+			else
+			    hour="${hours}"
+			fi
+			if [[ "${minute}" =~ ^[0-9]$ ]]; then
+			    echo "  <intervall>${hour}:0${minute}</intervall>"        >> ${hdir}.backup.operations
+			else
+			    echo "  <intervall>${hour}:${minute}</intervall>"         >> ${hdir}.backup.operations
+			fi
 
 
-                echo "  <date>${b_dats[$x]}</date>"                             >> ${hdir}.backup.operations
-                echo "  <type>${b_type[$x]}</type>"                             >> ${hdir}.backup.operations
-                echo "</server>"                                                >> ${hdir}.backup.operations
+			echo "  <date>${b_dats[$x]}</date>"                             >> ${hdir}.backup.operations
+			echo "  <type>${b_type[$x]}</type>"                             >> ${hdir}.backup.operations
+			echo "</server>"                                                >> ${hdir}.backup.operations
+		fi
            
             done 
         done
@@ -122,9 +126,6 @@ do
     fi
                         
 done
-
-
-
 
 
 # # #
@@ -148,7 +149,7 @@ today=`date +"%s"`
 yesterday=`expr $today - 86400`
 w_day=`date --date="@${yesterday}" +"%a"`
 
-occurrence=0
+
 
 
 # # #
@@ -162,20 +163,19 @@ if [[ ${find_dat[@]} =~ $w_day ]]; then
     do
 
         # Loop through backup logs
-	    cat ${reports}SBE-done | grep ${b_dirs[$x]} | while read -r logline ; do
+	cat ${reports}SBE-done | grep ${b_dirs[$x]} | while read -r logline ; do
 
             time=$(awk -F";" '{print $2}' <<< $logline)
             b_day=$(awk -F" " '{print $1}' <<< $time)
-            b_tim=$(awk -F" " '{print $5}' <<< $time)
+            b_tim=$(awk -F" " '{print $4}' <<< $time)
             daycount=$(echo ${b_dats[$x]} | grep ',' | wc -l)
 
             if [[ $b_day == $w_day ]]; then
      
-                     
                 if [[ $b_tim =~ ${b_invs[$x]} ]]; then
                     
-                    echo $logline 
-                    (( occurrence++ ))
+                    echo $logline
+                    echo $logline >> ${hdir}.backups-done
 
                 fi
 
@@ -187,6 +187,7 @@ if [[ ${find_dat[@]} =~ $w_day ]]; then
 fi
 
 
+occurrence=$(cat ${hdir}.backups-done | wc -l)
 daycount=$(grep -o -i $w_day <<< ${b_dats[@]} | wc -l)
 
 if [[ $daycount == $occurrence ]]; then
@@ -194,5 +195,5 @@ if [[ $daycount == $occurrence ]]; then
     echo
 else
     echo "Backup problem: $daycount backups configured, $occurrence executed"
-    echo -e "Subject: WARNING: Backup problem on $HOSTNAME\n\n There should've been $daycount backup operations but $occurrence operations are recognized" | sendmail $mail
+    echo -e "Subject: WARNING: Backup problem on $HOSTNAME\n\n There should've been $daycount backup operations but $occurrence operations are recognized" | /usr/sbin/sendmail $mail
 fi
