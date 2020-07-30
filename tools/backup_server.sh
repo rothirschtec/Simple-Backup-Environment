@@ -103,22 +103,33 @@ if [ $BACKUP -eq 1 ]; then
 
 	# @4 --------------------------
 
-	# @4.1
-	while read rline
-	do
-	    runq=$(awk -F";" '{print $1}' <<< $rline)
-	    if [ ! -e /proc/${runq} -a /proc/${runq}/exe ]; then
-		sed -i "/^$runq;.*$/d" ${reports}SBE-queue-run
-		sed -i '/^$/d' ${reports}SBE-queue-run
-	    fi
-	done < ${reports}SBE-queue
+	if [ -f ${reports}SBE-queue ]; then
+		# @4.1
+		while read rline
+		do
+		    runq=$(awk -F";" '{print $1}' <<< $rline)
+		    if [ ! -e /proc/${runq} -a /proc/${runq}/exe ]; then
+			if [ -f ${reports}SBE-queue-run ]; then
+				sed -i "/^$runq;.*$/d" ${reports}SBE-queue-run
+				sed -i '/^$/d' ${reports}SBE-queue-run
+			else
+				touch ${reports}SBE-queue-run
+			fi
+		    fi
+		done < ${reports}SBE-queue
 
-	# @4.2
-	if cat ${reports}SBE-queue | grep ${name} | grep ${BUCKET_TYPE} &> /dev/null; then
-	    echo "Already in queue"
-	    exit 2
+		# @4.2
+		if cat ${reports}SBE-queue | grep ${name} | grep ${BUCKET_TYPE} &> /dev/null; then
+		    echo "Already in queue"
+		    exit 2
+		fi
+	else
+		touch ${reports}SBE-queue
 	fi
 
+	if [ ! -f ${reports}SBE-queue-run ]; then
+		touch ${reports}SBE-queue-run
+	fi
 
 
 	# @5 --------------------------
