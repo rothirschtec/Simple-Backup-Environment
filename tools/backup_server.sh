@@ -40,32 +40,11 @@ rdir="$PWD/"
 error=false
 
 
+
 # @1.2
 BDAYS=1
 BWEEKS=1
 BMONTHS=1
-
-CURRENT_DAY=$((10#$(date +%j)))
-CURRENT_WEEK=$((10#$(date +%V)))
-CURRENT_MONTH=$((10#$(date +%m)))
-START_DATE=$(date)
-
-if [[ $@ =~ "--weekly" ]]; then
-     BUCKET=$(( CURRENT_WEEK % BWEEKS ))
-     BUCKET_TYPE="weekly"
-elif [[ $@ =~ "--monthly" ]]; then
-     BUCKET=$(( CURRENT_MONTH % BMONTHS ))
-     BUCKET_TYPE="monthly"
-elif [[ $@ =~ "--archive" ]]; then
-     BUCKET=$(( CURRENT_WEEK % BWEEKS ))
-     BUCKET_TYPE="archive"
-     TYPE="tar"
-else
-     BUCKET=$(( CURRENT_DAY % BDAYS ))
-     BUCKET_TYPE="daily"
-fi
-
-
 
 
 # @2 ------------------------------
@@ -86,6 +65,26 @@ else
     >&2 echo "No server.config found!!!"
     error=true
     # exit only this subshell
+fi
+
+CURRENT_DAY=$((10#$(date +%j)))
+CURRENT_WEEK=$((10#$(date +%V)))
+CURRENT_MONTH=$((10#$(date +%m)))
+START_DATE=$(date)
+
+if [[ $@ =~ "--weekly" ]]; then
+     BUCKET=$(( CURRENT_WEEK % BWEEKS ))
+     BUCKET_TYPE="weekly"
+elif [[ $@ =~ "--monthly" ]]; then
+     BUCKET=$(( CURRENT_MONTH % BMONTHS ))
+     BUCKET_TYPE="monthly"
+elif [[ $@ =~ "--archive" ]]; then
+     BUCKET=$(( CURRENT_WEEK % BWEEKS ))
+     BUCKET_TYPE="archive"
+     TYPE="tar"
+else
+     BUCKET=$(( CURRENT_DAY % BDAYS ))
+     BUCKET_TYPE="daily"
 fi
 
 
