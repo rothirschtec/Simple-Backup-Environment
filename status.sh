@@ -19,7 +19,18 @@ echo; echo "Current queue:"
 cat ${reports}SBE-queue
 
 echo; echo "Backups running at the moment:"
-cat ${reports}SBE-queue-run
+while read line
+do
+	echo $line
+	pid=$(awk -F ';' '{print $1}' ${reports}SBE-queue-run)
+
+	if ps -p $pid &>/dev/null; then
+		echo "  > Task ist still alive"
+	fi
+
+done < ${reports}SBE-queue-run
+
+
 
 echo; echo "Backups done:"
 if [ -f ${reports}SBE-done ]; then
