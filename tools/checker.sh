@@ -148,8 +148,7 @@ echo There are ${#b_dirs[@]} entries
 today=`date +"%s"`
 yesterday=`expr $today - 86400`
 w_day=`date --date="@${yesterday}" +"%a"`
-
-
+whole_day=`date --date="@${yesterday}" +"%a %b  %-d"`
 
 
 # # #
@@ -163,7 +162,7 @@ if [[ ${find_dat[@]} =~ $w_day ]]; then
     do
 
         # Loop through backup logs
-	cat ${reports}SBE-done | grep ${b_dirs[$x]} | while read -r logline ; do
+	cat ${reports}SBE-done | grep ${b_dirs[$x]} | grep "$whole_day" | while read -r logline ; do
 
             time=$(awk -F";" '{print $2}' <<< $logline)
             b_day=$(awk -F" " '{print $1}' <<< $time)
