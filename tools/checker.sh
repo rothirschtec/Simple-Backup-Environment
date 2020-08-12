@@ -148,7 +148,7 @@ echo There are ${#b_dirs[@]} entries
 today=`date +"%s"`
 yesterday=`expr $today - 86400`
 w_day=`date --date="@${yesterday}" +"%a"`
-whole_day=`date --date="@${yesterday}" +"%a %b  %-d"`
+whole_day=`date --date="@${yesterday}" +"%a %b %-d"`
 
 
 # # #
