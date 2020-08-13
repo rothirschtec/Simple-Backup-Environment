@@ -26,6 +26,8 @@ do
 
 	if ps -p $pid &>/dev/null; then
 		echo "  > Task ist still alive"
+	else
+		echo "  > No task with PID detected"
 	fi
 
 done < ${reports}SBE-queue-run
