@@ -168,13 +168,13 @@ if [[ ${find_dat[@]} =~ $w_day ]]; then
             time=$(awk -F";" '{print $2}' <<< $logline)
             b_day=$(awk -F" " '{print $1}' <<< $time)
             b_tim=$(awk -F" " '{print $4}' <<< $time)
-            if [[ ! $b_tim =~ "[00]:[00]:[00]" ]];then
+            if [[ ! $b_tim =~ [0-9][0-9]":"[0-9][0-9]":"[0-9][0-9] ]];then
                 b_tim=$(awk -F" " '{print $5}' <<< $time)
             fi
             daycount=$(echo ${b_dats[$x]} | grep ',' | wc -l)
 
             if [[ $b_day == $w_day ]]; then
-     
+
                if [[ $b_tim =~ ${b_invs[$x]} ]]; then
                     
                     echo $logline
