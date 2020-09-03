@@ -149,6 +149,7 @@ today=`date +"%s"`
 yesterday=`expr $today - 86400`
 w_day=`date --date="@${yesterday}" +"%a"`
 whole_day=`date --date="@${yesterday}" +"%a %d %b"`
+whole_day_rev=`date --date="@${yesterday}" +"%a %b %d"`
 
 # # #
 # Find uniqe daynames from .backup.operations and execute if there is one day like the current day
@@ -161,7 +162,7 @@ if [[ ${find_dat[@]} =~ $w_day ]]; then
     do
 
         # Loop through backup logs
-	cat ${reports}SBE-done | grep ${b_dirs[$x]} | grep "$whole_day" | while read -r logline ; do
+	cat ${reports}SBE-done | grep ${b_dirs[$x]} | grep "[$whole_day|$whole_day_rev]" | while read -r logline ; do
 
             time=$(awk -F";" '{print $2}' <<< $logline)
             b_day=$(awk -F" " '{print $1}' <<< $time)
