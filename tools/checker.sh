@@ -148,8 +148,9 @@ echo There are ${#b_dirs[@]} entries
 today=`date +"%s"`
 yesterday=`expr $today - 86400`
 w_day=`date --date="@${yesterday}" +"%a"`
-whole_day=`date --date="@${yesterday}" +"%a %d %b"`
-whole_day_rev=`date --date="@${yesterday}" +"%a %b %d"`
+w_year=`date --date="@${yesterday}" +"%Y"`
+w_month=`date --date="@${yesterday}" +"%b"`
+
 
 # # #
 # Find uniqe daynames from .backup.operations and execute if there is one day like the current day
@@ -161,21 +162,21 @@ if [[ ${find_dat[@]} =~ $w_day ]]; then
     for (( x=0; x < ${#b_dirs[@]}; x++ ))
     do
 
-        # Loop through backup logs
-	cat ${reports}SBE-done | grep ${b_dirs[$x]} | grep "[$whole_day|$whole_day_rev]" | while read -r logline ; do
+        # Loop through backup log
+	cat ${reports}SBE-done | grep "${b_dirs[$x]}" | grep "$w_day" | grep "$w_month" | grep "$w_year" | while read -r logline ; do
 
             time=$(awk -F";" '{print $2}' <<< $logline)
             b_day=$(awk -F" " '{print $1}' <<< $time)
-            b_tim=$(awk -F" " '{print $5}' <<< $time)
+            b_tim=$(awk -F" " '{print $4}' <<< $time)
             daycount=$(echo ${b_dats[$x]} | grep ',' | wc -l)
 
-            if [[ $b_day == $w_day ]]; then
+           if [[ $b_day == $w_day ]]; then
      
-                if [[ $b_tim =~ ${b_invs[$x]} ]]; then
+               if [[ $b_tim =~ ${b_invs[$x]} ]]; then
                     
                     echo $logline
                     echo $logline >> ${hdir}.backups-done
-
+	
                 fi
 
             fi
