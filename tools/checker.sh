@@ -148,6 +148,7 @@ echo There are ${#b_dirs[@]} entries
 today=`date +"%s"`
 yesterday=`expr $today - 86400`
 w_day=`date --date="@${yesterday}" +"%a"`
+w_day_num=`date --date="@${yesterday}" +"%-d"`
 w_year=`date --date="@${yesterday}" +"%Y"`
 w_month=`date --date="@${yesterday}" +"%b"`
 
@@ -165,23 +166,27 @@ if [[ ${find_dat[@]} =~ $w_day ]]; then
         # Loop through backup log
         cat ${reports}SBE-done | grep "${b_dirs[$x]}" | grep "$w_day" | grep "$w_month" | grep "$w_year" | while read -r logline ; do
 
+        
             time=$(awk -F";" '{print $2}' <<< $logline)
-            b_day=$(awk -F" " '{print $1}' <<< $time)
-            b_tim=$(awk -F" " '{print $4}' <<< $time)
-            if [[ ! $b_tim =~ [0-9][0-9]":"[0-9][0-9]":"[0-9][0-9] ]];then
-                b_tim=$(awk -F" " '{print $5}' <<< $time)
-            fi
-            daycount=$(echo ${b_dats[$x]} | grep ',' | wc -l)
+            if awk -F";"  '{print $2}' <<< $logline | grep "$w_day" | grep "$w_month" | grep "$w_year" | grep "$w_day_num" &>/dev/null; then
 
-            if [[ $b_day == $w_day ]]; then
-
-               if [[ $b_tim =~ ${b_invs[$x]} ]]; then
-                    
-                    echo $logline
-                    echo $logline >> ${hdir}.backups-done
-	
+                b_day=$(awk -F" " '{print $1}' <<< $time)
+                b_tim=$(awk -F" " '{print $4}' <<< $time)
+                if [[ ! $b_tim =~ [0-9][0-9]":"[0-9][0-9]":"[0-9][0-9] ]];then
+                    b_tim=$(awk -F" " '{print $5}' <<< $time)
                 fi
+                daycount=$(echo ${b_dats[$x]} | grep ',' | wc -l)
 
+                if [[ $b_day == $w_day ]]; then
+
+                   if [[ $b_tim =~ ${b_invs[$x]} ]]; then
+                        
+                        echo $logline
+                        echo $logline >> ${hdir}.backups-done
+        
+                    fi
+
+                fi
             fi
 
         done
