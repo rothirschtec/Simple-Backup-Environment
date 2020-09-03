@@ -163,14 +163,17 @@ if [[ ${find_dat[@]} =~ $w_day ]]; then
     do
 
         # Loop through backup log
-	cat ${reports}SBE-done | grep "${b_dirs[$x]}" | grep "$w_day" | grep "$w_month" | grep "$w_year" | while read -r logline ; do
+        cat ${reports}SBE-done | grep "${b_dirs[$x]}" | grep "$w_day" | grep "$w_month" | grep "$w_year" | while read -r logline ; do
 
             time=$(awk -F";" '{print $2}' <<< $logline)
             b_day=$(awk -F" " '{print $1}' <<< $time)
             b_tim=$(awk -F" " '{print $4}' <<< $time)
+            if [[ ! $b_tim =~ "[00]:[00]:[00]" ]];then
+                b_tim=$(awk -F" " '{print $5}' <<< $time)
+            fi
             daycount=$(echo ${b_dats[$x]} | grep ',' | wc -l)
 
-           if [[ $b_day == $w_day ]]; then
+            if [[ $b_day == $w_day ]]; then
      
                if [[ $b_tim =~ ${b_invs[$x]} ]]; then
                     
