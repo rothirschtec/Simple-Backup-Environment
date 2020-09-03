@@ -148,8 +148,7 @@ echo There are ${#b_dirs[@]} entries
 today=`date +"%s"`
 yesterday=`expr $today - 86400`
 w_day=`date --date="@${yesterday}" +"%a"`
-whole_day=`date --date="@${yesterday}" +"%a %b %-d"`
-
+whole_day=`date --date="@${yesterday}" +"%a %d %b"`
 
 # # #
 # Find uniqe daynames from .backup.operations and execute if there is one day like the current day
@@ -166,7 +165,7 @@ if [[ ${find_dat[@]} =~ $w_day ]]; then
 
             time=$(awk -F";" '{print $2}' <<< $logline)
             b_day=$(awk -F" " '{print $1}' <<< $time)
-            b_tim=$(awk -F" " '{print $4}' <<< $time)
+            b_tim=$(awk -F" " '{print $5}' <<< $time)
             daycount=$(echo ${b_dats[$x]} | grep ',' | wc -l)
 
             if [[ $b_day == $w_day ]]; then
