@@ -26,14 +26,14 @@ do
 
 	if [ -f /etc/os-release ]; then
         # For any linux os
-		if [[ $(ps -ef | grep $pid | wc -l) > 1 ]]; then
+		if ps -ef | grep "^$pid" &>/dev/null; then
 			echo "  > Task ist still alive"
 		else
 			echo "  > No task with PID detected"
 		fi
 	else
         # For qnap nas
-		if [[ $(ps | grep $pid | wc -l) > 1 ]]; then
+		if ps | grep "^ $pid" &>/dev/null; then
 			echo "  > Task ist still alive"
 		else
 			echo "  > No task with PID detected"
