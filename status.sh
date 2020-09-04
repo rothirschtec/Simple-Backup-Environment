@@ -24,7 +24,7 @@ do
 	echo $line
 	pid=$(awk -F ';' '{print $1}' ${reports}SBE-queue-run)
 
-	if ps -p $pid &>/dev/null; then
+	if ps |grep $pid &>/dev/null; then
 		echo "  > Task ist still alive"
 	else
 		echo "  > No task with PID detected"
