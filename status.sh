@@ -26,7 +26,7 @@ do
 
 	if [ -f /etc/os-release ]; then
         # For any linux os
-		if ps -ef | grep "^$pid" &>/dev/null; then
+		if ps -p $pid &>/dev/null; then
 			echo "  > Task ist still alive"
 		else
 			echo "  > No task with PID detected"
