@@ -22,16 +22,16 @@ echo; echo "Backups running at the moment:"
 while read line
 do
 	echo $line
-	pid=$(awk -F ';' '{print $1}' ${reports}SBE-queue-run)
+	pid=$(awk -F ';' '{print $1}' <<< $line)
 
 	if [ -f /etc/os-release ]; then
-		if [[ $(ps -ef |grep $pid | wc -l) > 1 ]]; then
+		if [[ $(ps -ef | grep $pid | wc -l) > 1 ]]; then
 			echo "  > Task ist still alive"
 		else
 			echo "  > No task with PID detected"
 		fi
 	else
-		if [[ $(ps |grep $pid | wc -l) > 1 ]]; then
+		if [[ $(ps | grep $pid | wc -l) > 1 ]]; then
 			echo "  > Task ist still alive"
 		else
 			echo "  > No task with PID detected"
