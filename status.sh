@@ -25,13 +25,13 @@ do
 	pid=$(awk -F ';' '{print $1}' ${reports}SBE-queue-run)
 
 	if [ -f /etc/os-release ]; then
-		if ps -p $pid &>/dev/null; then
+		if [[ $(ps -ef |grep $pid | wc -l) > 1 ]]; then
 			echo "  > Task ist still alive"
 		else
 			echo "  > No task with PID detected"
 		fi
 	else
-		if [[ $(ps |grep 2911 | wc -l) > 1 ]]; then
+		if [[ $(ps |grep $pid | wc -l) > 1 ]]; then
 			echo "  > Task ist still alive"
 		else
 			echo "  > No task with PID detected"
