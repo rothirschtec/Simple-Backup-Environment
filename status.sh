@@ -25,12 +25,14 @@ do
 	pid=$(awk -F ';' '{print $1}' <<< $line)
 
 	if [ -f /etc/os-release ]; then
+        # For any linux os
 		if [[ $(ps -ef | grep $pid | wc -l) > 1 ]]; then
 			echo "  > Task ist still alive"
 		else
 			echo "  > No task with PID detected"
 		fi
 	else
+        # For qnap nas
 		if [[ $(ps | grep $pid | wc -l) > 1 ]]; then
 			echo "  > Task ist still alive"
 		else
