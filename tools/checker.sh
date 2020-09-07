@@ -200,6 +200,7 @@ daycount=$(grep -o -i $w_day <<< ${b_dats[@]} | wc -l)
 
 if [[ $daycount == $occurrence ]]; then
     echo "All $daycount backups successfull ($occurrence)"
+    echo -e "Subject: SUCCESS: Backup on $HOSTNAME\n\n ($daycount) done" | /usr/sbin/sendmail $mail
     echo
 else
     echo "Backup problem: $daycount backups configured, $occurrence executed"
