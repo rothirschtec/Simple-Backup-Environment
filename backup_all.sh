@@ -34,6 +34,9 @@ else
 
 fi
 
+# # #                                                                                    
+# Sort out duplicated values                                                           
+b_dirs_sorted=$(echo "${b_dirs[@]}" | tr ' ' '\n' | sort -u | tr '\n' ' ') 
 
 # # #
 # Parse config
@@ -46,13 +49,13 @@ fi
 
 # # #
 # Start backups
-for (( x=0; x < ${#b_dirs[@]}; x++ ))
+for (( x=0; x < ${#b_dirs_sorted[@]}; x++ ))
 do
 
     if [[ $1 == "now" ]]; then
 
-        if [[ ! "${didbackup[@]}" =~ "${b_dirs[$x]}" ]]; then
-            didbackup[$x]=${b_dirs[$x]}
+        if [[ ! "${didbackup[@]}" =~ "${b_dirs_sorted[$x]}" ]]; then
+            didbackup[$x]=${b_dirs_sorted[$x]}
             dobackup[0]=1
             dobackup[1]=1
             dobackup[2]=1
@@ -144,10 +147,10 @@ do
 
     if [ ${dobackup[0]} -eq 1 ] && [ ${dobackup[1]} -eq 1 ]; then
 
-        if [ -f ${hdir}${b_dirs[$x]}/backup_server.sh ]; then
+        if [ -f ${hdir}${b_dirs_sorted[$x]}/backup_server.sh ]; then
     
-            bash "${hdir}${b_dirs[$x]}/backup_server.sh" "--${b_type[$x]}" &
-            echo "Backup for ${b_dirs[$x]} under way..."
+            bash "${hdir}${b_dirs_sorted[$x]}/backup_server.sh" "--${b_type[$x]}" &
+            echo "Backup for ${b_dirs_sorted[$x]} under way..."
 
         else
         
