@@ -37,6 +37,7 @@ fi
 # # #                                                                                    
 # Sort out duplicated values                                                           
 b_dirs_sorted=( $(echo "${b_dirs[@]}" | tr ' ' '\n' | sort -u | tr '\n' ' ') )
+echo ${b_dirs_sorted[@]}
 
 # # #
 # Parse config
@@ -54,17 +55,9 @@ do
 
     if [[ $1 == "now" ]]; then
 
-        if [[ ! "${didbackup[@]}" =~ "${b_dirs_sorted[$x]}" ]]; then
-            didbackup[$x]=${b_dirs_sorted[$x]}
-            dobackup[0]=1
-            dobackup[1]=1
-            dobackup[2]=1
-        else
-            dobackup[0]=0
-            dobackup[1]=0
-            dobackup[2]=0
-        fi
-
+        dobackup[0]=1
+        dobackup[1]=1
+        dobackup[2]=1
 
     else
 
@@ -155,8 +148,7 @@ do
 
         else
         
-            echo "Backup directory doesn't exist"
-            exit 1
+            echo "Backup directory (${b_dirs_sorted[$x]}) doesn't exist"
 
         fi
     fi
