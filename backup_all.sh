@@ -36,7 +36,7 @@ fi
 
 # # #                                                                                    
 # Sort out duplicated values                                                           
-b_dirs_sorted=$(echo "${b_dirs[@]}" | tr ' ' '\n' | sort -u | tr '\n' ' ') 
+b_dirs_sorted=( $(echo "${b_dirs[@]}" | tr ' ' '\n' | sort -u | tr '\n' ' ') )
 
 # # #
 # Parse config
@@ -147,6 +147,7 @@ do
 
     if [ ${dobackup[0]} -eq 1 ] && [ ${dobackup[1]} -eq 1 ]; then
 
+        
         if [ -f ${hdir}${b_dirs_sorted[$x]}/backup_server.sh ]; then
     
             bash "${hdir}${b_dirs_sorted[$x]}/backup_server.sh" "--${b_type[$x]}" &
