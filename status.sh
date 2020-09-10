@@ -11,6 +11,8 @@ if [ -f ${hdir}config ]; then
 else
     source ${hdir}tools/config_example
 fi
+source /etc/os-release
+echo $NAME
 
 echo; echo "QUEUE STATUS"
 echo "------------"
@@ -24,7 +26,7 @@ do
 	echo $line
 	pid=$(awk -F ';' '{print $1}' <<< $line)
 
-	if [ -f /etc/os-release ]; then
+	if [[ $NAME != "QTS" ]]; then
         # For any linux os
 		if ps -p $pid &>/dev/null; then
 			echo "  > Task ist still alive"
@@ -33,7 +35,7 @@ do
 		fi
 	else
         # For qnap nas
-		if ps | grep "^ $pid" &>/dev/null; then
+		if ps | grep "$pid S" &>/dev/null; then
 			echo "  > Task ist still alive"
 		else
 			echo "  > No task with PID detected"
