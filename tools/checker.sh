@@ -1,15 +1,15 @@
 #!/bin/bash
 
-cd $(dirname $0)
-tools="$PWD/"
-cd ..
-hdir="$PWD/"
-echo
+# Runs through backup.xml - recognizes intervalls and creates a file named .backup-operations
+# in this file you can find each backup execution defined by intervalls
 
-# Declare Variante
-rm -f ${hdir}.backups-done; touch ${hdir}.backups-done
+# Declare variables
+cd $(dirname $0); tools="$PWD/"; cd ..; hdir="$PWD/";
 
-# # #
+# Clean template files
+rm -f ${hdir}.backups-executed-yesterday; touch ${hdir}.backups-executed-yesterday
+rm -f ${hdir}.backup-operations; touch ${hdir}.backup-operations;
+
 # Parse config
 if [ -f ${hdir}config ]; then
     source ${hdir}config
@@ -17,8 +17,6 @@ else
     source ${hdir}tools/config_example
 fi
 
-
-# # #
 # Check done file
 if [ ! -f ${reports}SBE-done ]; then
     echo "No backups done"
@@ -26,7 +24,6 @@ if [ ! -f ${reports}SBE-done ]; then
     exit 2
 fi
 
-# # #
 # Parse backup.xml
 if [ -f ${hdir}backup.xml ]; then
 
@@ -42,17 +39,10 @@ else
 
 fi
 
-
-
-# Clean backup operations
-rm -f ${hdir}.backup.operations; touch ${hdir}.backup.operations;
-
-
+# Loop through backup.xml an recognize intervalls
 for (( x=0; x < ${#b_dirs[@]}; x++ ))
 do
 
-
-    # # #
     # Dismantle hours
     if [[ "${b_invs[$x]}" =~ ^[0-9][hH]$ ]] || [[ "${b_invs[$x]}" =~ ^[0-9][0-9][hH]$ ]]; then
 
@@ -60,23 +50,21 @@ do
         minloop=$(( 24 / $hours ))
         for (( hl=1; hl <= $minloop; hl++ ))
         do
-            echo "<server>"                                                 >> ${hdir}.backup.operations
-            echo "  <backupdirectory>${b_dirs[$x]}</backupdirectory>"       >> ${hdir}.backup.operations
+            echo "<server>"                                                 >> ${hdir}.backup-operations
+            echo "  <backupdirectory>${b_dirs[$x]}</backupdirectory>"       >> ${hdir}.backup-operations
 
             hour=$(( $hl *  $hours ))
             if [[ "${hour}" =~ ^[0-9]$ ]]; then
-                echo "  <intervall>0$hour:00</intervall>"                   >> ${hdir}.backup.operations
+                echo "  <intervall>0$hour:00</intervall>"                   >> ${hdir}.backup-operations
             else
-                echo "  <intervall>$hour:00</intervall>"                    >> ${hdir}.backup.operations
+                echo "  <intervall>$hour:00</intervall>"                    >> ${hdir}.backup-operations
             fi
 
-            echo "  <date>${b_dats[$x]}</date>"                             >> ${hdir}.backup.operations
-            echo "  <type>${b_type[$x]}</type>"                             >> ${hdir}.backup.operations
-            echo "</server>"                                                >> ${hdir}.backup.operations
+            echo "  <date>${b_dats[$x]}</date>"                             >> ${hdir}.backup-operations
+            echo "  <type>${b_type[$x]}</type>"                             >> ${hdir}.backup-operations
+            echo "</server>"                                                >> ${hdir}.backup-operations
         done
 
-
-    # # #
     # Dismantle minutes
     elif [[ "${b_invs[$x]}" =~ ^[0-9][0-9][mM]$ ]] || [[ "${b_invs[$x]}" =~ ^[0-9][mM]$ ]]; then
 
@@ -87,122 +75,94 @@ do
             for (( hl=1; hl <= $minloop; hl++ ))
             do
 
-		minute=$(( $hl *  $minutes ))
-		if [[ $minute < 60 ]]; then
-			echo "<server>"                                                 >> ${hdir}.backup.operations
-			echo "  <backupdirectory>${b_dirs[$x]}</backupdirectory>"       >> ${hdir}.backup.operations
+            minute=$(( $hl *  $minutes ))
+            if [[ $minute < 60 ]]; then
+                echo "<server>"                                             >> ${hdir}.backup-operations
+                echo "  <backupdirectory>${b_dirs[$x]}</backupdirectory>"   >> ${hdir}.backup-operations
 
-			if [[ "${hours}" =~ ^[0-9]$ ]]; then
-			    hour="0${hours}"
-			else
-			    hour="${hours}"
-			fi
-			if [[ "${minute}" =~ ^[0-9]$ ]]; then
-			    echo "  <intervall>${hour}:0${minute}</intervall>"        >> ${hdir}.backup.operations
-			else
-			    echo "  <intervall>${hour}:${minute}</intervall>"         >> ${hdir}.backup.operations
-			fi
+                if [[ "${hours}" =~ ^[0-9]$ ]]; then
+                    hour="0${hours}"
+                else
+                    hour="${hours}"
+                fi
+                if [[ "${minute}" =~ ^[0-9]$ ]]; then
+                    echo "  <intervall>${hour}:0${minute}</intervall>"      >> ${hdir}.backup-operations
+                else
+                    echo "  <intervall>${hour}:${minute}</intervall>"       >> ${hdir}.backup-operations
+                fi
 
 
-			echo "  <date>${b_dats[$x]}</date>"                             >> ${hdir}.backup.operations
-			echo "  <type>${b_type[$x]}</type>"                             >> ${hdir}.backup.operations
-			echo "</server>"                                                >> ${hdir}.backup.operations
-		fi
+                echo "  <date>${b_dats[$x]}</date>"                         >> ${hdir}.backup-operations
+                echo "  <type>${b_type[$x]}</type>"                         >> ${hdir}.backup-operations
+                echo "</server>"                                            >> ${hdir}.backup-operations
+            fi
            
             done 
         done
 
-    # # #
     # Rest
     else
 
-        echo "<server>"                                                         >> ${hdir}.backup.operations
-        echo "  <backupdirectory>${b_dirs[$x]}</backupdirectory>"               >> ${hdir}.backup.operations
-        echo "  <intervall>${b_invs[$x]}</intervall>"                           >> ${hdir}.backup.operations
-        echo "  <date>${b_dats[$x]}</date>"                                     >> ${hdir}.backup.operations
-        echo "  <type>${b_type[$x]}</type>"                                     >> ${hdir}.backup.operations
-        echo "</server>"                                                        >> ${hdir}.backup.operations
+        echo "<server>"                                                     >> ${hdir}.backup-operations
+        echo "  <backupdirectory>${b_dirs[$x]}</backupdirectory>"           >> ${hdir}.backup-operations
+        echo "  <intervall>${b_invs[$x]}</intervall>"                       >> ${hdir}.backup-operations
+        echo "  <date>${b_dats[$x]}</date>"                                 >> ${hdir}.backup-operations
+        echo "  <type>${b_type[$x]}</type>"                                 >> ${hdir}.backup-operations
+        echo "</server>"                                                    >> ${hdir}.backup-operations
 
     fi
                         
 done
 
+# Parse .backup-operations
+b_dirs=($(grep -oP '(?<=<backupdirectory>).*?(?=</backupdirectory>)' ${hdir}.backup-operations))
+b_invs=($(grep -oP '(?<=<intervall>).*?(?=</intervall>)' ${hdir}.backup-operations))
+b_dats=($(grep -oP '(?<=<date>).*?(?=</date>)' ${hdir}.backup-operations))
+b_type=($(grep -oP '(?<=<type>).*?(?=</type>)' ${hdir}.backup-operations))
+echo; echo " a total of ${#b_dirs[@]} backup operations found"
 
-# # #
-# Parse .backup.operations
-b_dirs=($(grep -oP '(?<=<backupdirectory>).*?(?=</backupdirectory>)' ${hdir}.backup.operations))
-b_invs=($(grep -oP '(?<=<intervall>).*?(?=</intervall>)' ${hdir}.backup.operations))
-b_dats=($(grep -oP '(?<=<date>).*?(?=</date>)' ${hdir}.backup.operations))
-b_type=($(grep -oP '(?<=<type>).*?(?=</type>)' ${hdir}.backup.operations))
-
-
-
-echo There are ${#b_dirs[@]} entries
-
-
-# # #
+# Define period of backups to check
 # bugfix for qnap NAS
 # -d '1 day' or -d 'yesterday' or -d '1 day ago' doesn't work
 # w_day=$(date -d '1 day' +'%a')
 # bugfix uses seconds
 today=`date +"%s"`
 yesterday=`expr $today - 86400`
-w_day=`date --date="@${yesterday}" +"%a"`
-w_day_num=`date --date="@${yesterday}" +"%-d"`
-w_year=`date --date="@${yesterday}" +"%Y"`
-w_month=`date --date="@${yesterday}" +"%b"`
+w_day=`date --date="@${yesterday}" +"%a"`           # Day of week short name
+w_day_num=`date --date="@${yesterday}" +"%-d"`      # Day of month as number
+w_year=`date --date="@${yesterday}" +"%Y"`          # Year
+w_month=`date --date="@${yesterday}" +"%b"`         # Month as 3 sign short name
 
+# Loop through servernames from .backup-operations and write all executed lines from yesterday to .backups-executed-yesterday file
+for (( x=0; x < ${#b_dirs[@]}; x++ ))
+do
+    # Loop through backup log
+    cat ${reports}SBE-done | grep "${b_dirs[$x]}" | grep "$w_day" | grep "$w_month" | grep "$w_year" | grep "$w_day_num " | while read -r logline ; do
 
-# # #
-# Find uniqe daynames from .backup.operations and execute if there is one day like the current day
-find_dat=$(sed 's/,/ /g ' <<< ${b_dats[@]})
-find_dat=$(echo "${find_dat[@]}" | tr ' ' '\n' | sort -u | tr '\n' ' ')
-if [[ ${find_dat[@]} =~ $w_day ]]; then
+        echo $logline >> ${hdir}.backups-executed-yesterday
 
-    # Loop through servernames from .backup.operations
-    for (( x=0; x < ${#b_dirs[@]}; x++ ))
-    do
-
-        # Loop through backup log
-        cat ${reports}SBE-done | grep "${b_dirs[$x]}" | grep "$w_day" | grep "$w_month" | grep "$w_year" | while read -r logline ; do
-
-        
-            time=$(awk -F";" '{print $2}' <<< $logline)
-            if awk -F";"  '{print $2}' <<< $logline | grep "$w_day" | grep "$w_month" | grep "$w_year" | grep "$w_day_num" &>/dev/null; then
-
-                b_day=$(awk -F" " '{print $1}' <<< $time)
-                b_tim=$(awk -F" " '{print $4}' <<< $time)
-                if [[ ! $b_tim =~ [0-9][0-9]":"[0-9][0-9]":"[0-9][0-9] ]];then
-                    b_tim=$(awk -F" " '{print $5}' <<< $time)
-                fi
-                daycount=$(echo ${b_dats[$x]} | grep ',' | wc -l)
-
-                if [[ $b_day == $w_day ]]; then
-
-                   if [[ $b_tim =~ ${b_invs[$x]} ]]; then
-                        
-                        echo $logline
-                        echo $logline >> ${hdir}.backups-done
-        
-                    fi
-
-                fi
-            fi
-
-        done
     done
+done
 
-fi
+# Count backups and display
+occurrence=$(cat ${hdir}.backups-executed-yesterday | wc -l)
+dc1=$(grep -o -i $w_day <<< ${b_dats[@]} | wc -l) 
+dc2=$(grep -o -i $w_day_num <<< ${b_dats[@]} | wc -l)
+daycount=$(( ${dc1} + ${dc2} ))
+echo " $daycount of them are meant to be executed yesterday"
+echo " count of executed backups is $occurrence"; echo
 
+echo " This executions are as following:"
+servers=($(echo "${b_dirs[@]}" | tr ' ' '\n' | sort -u | tr '\n' ' '))
+for server in ${servers[@]}
+do
+    scount=$(cat ${hdir}.backups-executed-yesterday | grep $server | wc -l)
+    echo " $server: $scount"
+done
 
-occurrence=$(cat ${hdir}.backups-done | wc -l)
-daycount=$(grep -o -i $w_day <<< ${b_dats[@]} | wc -l)
 
 if [[ $daycount == $occurrence ]]; then
-    echo "All $daycount backups successfull ($occurrence)"
     echo -e "Subject: SUCCESS: Backup on $HOSTNAME\n\n ($daycount) done" | /usr/sbin/sendmail $mail
-    echo
 else
-    echo "Backup problem: $daycount backups configured, $occurrence executed"
     echo -e "Subject: WARNING: Backup problem on $HOSTNAME\n\n There should've been $daycount backup operations but $occurrence operations are recognized" | /usr/sbin/sendmail $mail
 fi
