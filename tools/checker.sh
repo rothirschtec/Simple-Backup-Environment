@@ -135,9 +135,9 @@ w_year=`date --date="@${yesterday}" +"%Y"`          # Year
 w_month=`date --date="@${yesterday}" +"%b"`         # Month as 3 sign short name
 
 # Loop through servernames from .backup-operations and write all executed lines from yesterday to .backups-executed-yesterday file
-cat ${reports}SBE-done | grep "${b_dirs[$x]}" | grep "$w_day" | grep "$w_month" | grep "$w_year" | grep "$w_day_num " | while read -r logline ; do
+cat ${reports}SBE-done | awk -F";" '{print $3, $2}' | while read -r logline ; do
 
-echo $logline >> ${hdir}.backups-executed-yesterday
+    echo $logline | awk -F" " '{print $1, $2, $3, $4, $7}' | grep $w_day | grep $w_month | grep $w_day_num | grep $w_year > ${hdir}.backups-executed-yesterday 
 
 done
 
