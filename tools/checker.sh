@@ -119,7 +119,8 @@ b_dirs=($(grep -oP '(?<=<backupdirectory>).*?(?=</backupdirectory>)' ${hdir}.bac
 b_invs=($(grep -oP '(?<=<intervall>).*?(?=</intervall>)' ${hdir}.backup-operations))
 b_dats=($(grep -oP '(?<=<date>).*?(?=</date>)' ${hdir}.backup-operations))
 b_type=($(grep -oP '(?<=<type>).*?(?=</type>)' ${hdir}.backup-operations))
-echo; echo " a total of ${#b_dirs[@]} backup operations found"
+
+echo; echo " a total of ${#b_dirs[@]} backup operations are configured"
 
 # Define period of backups to check
 # bugfix for qnap NAS
@@ -134,14 +135,10 @@ w_year=`date --date="@${yesterday}" +"%Y"`          # Year
 w_month=`date --date="@${yesterday}" +"%b"`         # Month as 3 sign short name
 
 # Loop through servernames from .backup-operations and write all executed lines from yesterday to .backups-executed-yesterday file
-for (( x=0; x < ${#b_dirs[@]}; x++ ))
-do
-    # Loop through backup log
-    cat ${reports}SBE-done | grep "${b_dirs[$x]}" | grep "$w_day" | grep "$w_month" | grep "$w_year" | grep "$w_day_num " | while read -r logline ; do
+cat ${reports}SBE-done | grep "${b_dirs[$x]}" | grep "$w_day" | grep "$w_month" | grep "$w_year" | grep "$w_day_num " | while read -r logline ; do
 
-        echo $logline >> ${hdir}.backups-executed-yesterday
+echo $logline >> ${hdir}.backups-executed-yesterday
 
-    done
 done
 
 # Count backups and display
