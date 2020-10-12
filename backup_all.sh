@@ -34,10 +34,6 @@ else
 
 fi
 
-# # #                                                                                    
-# Sort out duplicated values                                                           
-b_dirs_sorted=( $(echo "${b_dirs[@]}" | tr ' ' '\n' | sort -u | tr '\n' ' ') )
-echo ${b_dirs_sorted[@]}
 
 # # #
 # Parse config
@@ -50,7 +46,7 @@ fi
 
 # # #
 # Start backups
-for (( x=0; x < ${#b_dirs_sorted[@]}; x++ ))
+for (( x=0; x < ${#b_dirs[@]}; x++ ))
 do
 
     if [[ $1 == "now" ]]; then
@@ -141,14 +137,14 @@ do
     if [ ${dobackup[0]} -eq 1 ] && [ ${dobackup[1]} -eq 1 ]; then
 
         
-        if [ -f ${hdir}${b_dirs_sorted[$x]}/backup_server.sh ]; then
+        if [ -f ${hdir}${b_dirs[$x]}/backup_server.sh ]; then
     
-            bash "${hdir}${b_dirs_sorted[$x]}/backup_server.sh" "--${b_type[$x]}" &
-            echo "Backup for ${b_dirs_sorted[$x]} under way..."
+            bash "${hdir}${b_dirs[$x]}/backup_server.sh" "--${b_type[$x]}" &
+            echo "Backup for ${b_dirs[$x]} under way..."
 
         else
         
-            echo "Backup directory (${b_dirs_sorted[$x]}) doesn't exist"
+            echo "Backup directory (${b_dirs[$x]}) doesn't exist"
 
         fi
     fi
