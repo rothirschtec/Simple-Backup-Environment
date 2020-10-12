@@ -134,32 +134,41 @@ w_day_num=`date --date="@${yesterday}" +"%-d"`      # Day of month as number
 w_year=`date --date="@${yesterday}" +"%Y"`          # Year
 w_month=`date --date="@${yesterday}" +"%b"`         # Month as 3 sign short name
 
+rm -f ${hdir}.backups-executed-yesterday 
 # Loop through servernames from .backup-operations and write all executed lines from yesterday to .backups-executed-yesterday file
-cat ${reports}SBE-done | awk -F";" '{print $3, $2}' | while read -r logline ; do
+cat ${reports}SBE-done | awk -F";" '{print $3, $2}' | grep $w_month | grep $w_year | grep $w_day_num | grep $w_day |  while read -r logline ; do
 
-    echo $logline | awk -F" " '{print $1, $2, $3, $4, $7}' | grep $w_day | grep $w_month | grep $w_day_num | grep $w_year > ${hdir}.backups-executed-yesterday 
+    echo $logline | awk -F" " '{print $1, $2, $3, $4, $7}' >> ${hdir}.backups-executed-yesterday 
 
 done
 
-# Count backups and display
-occurrence=$(cat ${hdir}.backups-executed-yesterday | wc -l)
-dc1=$(grep -o -i $w_day <<< ${b_dats[@]} | wc -l) 
-dc2=$(grep -o -i $w_day_num <<< ${b_dats[@]} | wc -l)
-daycount=$(( ${dc1} + ${dc2} ))
-echo " $daycount of them are meant to be executed yesterday"
-echo " count of executed backups is $occurrence"; echo
+if [ -f ${hdir}.backups-executed-yesterday ]; then
 
-echo " This executions are as following:"
-servers=($(echo "${b_dirs[@]}" | tr ' ' '\n' | sort -u | tr '\n' ' '))
-for server in ${servers[@]}
-do
-    scount=$(cat ${hdir}.backups-executed-yesterday | grep $server | wc -l)
-    echo " $server: $scount"
-done
+    # Count backups and display
+    occurrence=$(cat ${hdir}.backups-executed-yesterday | wc -l)
+    dc1=$(grep -o -i $w_day <<< ${b_dats[@]} | wc -l) 
+    dc2=$(grep -o -i $w_day_num <<< ${b_dats[@]} | wc -l)
+    daycount=$(( ${dc1} + ${dc2} ))
+    echo " $daycount of them are meant to be executed yesterday"
+    echo " count of executed backups is $occurrence"; echo
+
+    echo " This executions are as following:"
+    servers=($(echo "${b_dirs[@]}" | tr ' ' '\n' | sort -u | tr '\n' ' '))
+    for server in ${servers[@]}
+    do
+        scount=$(cat ${hdir}.backups-executed-yesterday | grep $server | wc -l)
+        echo " $server: $scount"
+    done
 
 
-if [[ $daycount == $occurrence ]]; then
-    echo -e "Subject: SUCCESS: Backup on $HOSTNAME\n\n ($daycount) done" | /usr/sbin/sendmail $mail
+    if [[ $daycount == $occurrence ]]; then
+        echo -e "Subject: SUCCESS: Backup on $HOSTNAME\n\n ($daycount) done" | /usr/sbin/sendmail $mail
+    else
+        echo -e "Subject: WARNING: Backup problem on $HOSTNAME\n\n There should've been $daycount backup operations but $occurrence operations are recognized" | /usr/sbin/sendmail $mail
+    fi
+
 else
-    echo -e "Subject: WARNING: Backup problem on $HOSTNAME\n\n There should've been $daycount backup operations but $occurrence operations are recognized" | /usr/sbin/sendmail $mail
+
+    echo -e "Subject: WARNING: Backup problem on $HOSTNAME\n\n There are no backups inside done log from yesterday" | /usr/sbin/sendmail $mail
+
 fi
