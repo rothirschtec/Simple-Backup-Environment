@@ -26,7 +26,7 @@ do
 	echo $line
 	pid=$(awk -F ';' '{print $1}' <<< $line)
 
-	if [[ $NAME != "QTS" ]]; then
+	if [[ ! $MACHTYPE =~ "x86_64-QNAP-linux-gnu" ]]; then
         # For any linux os
 		if ps -p $pid &>/dev/null; then
 			echo "  > Task ist still alive"
@@ -35,7 +35,7 @@ do
 		fi
 	else
         # For qnap nas
-		if ps | grep "$pid S" &>/dev/null; then
+		if ps | grep "$pid" | grep "bash" &>/dev/null; then
 			echo "  > Task ist still alive"
 		else
 			echo "  > No task with PID detected"
