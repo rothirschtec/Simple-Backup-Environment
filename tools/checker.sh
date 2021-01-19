@@ -39,9 +39,11 @@ else
 
 fi
 
+
 # Loop through backup.xml an recognize intervalls
 for (( x=0; x < ${#b_dirs[@]}; x++ ))
 do
+
 
     # Dismantle hours
     if [[ "${b_invs[$x]}" =~ ^[0-9][hH]$ ]] || [[ "${b_invs[$x]}" =~ ^[0-9][0-9][hH]$ ]]; then
@@ -75,27 +77,27 @@ do
             for (( hl=1; hl <= $minloop; hl++ ))
             do
 
-            minute=$(( $hl *  $minutes ))
-            if [[ $minute < 60 ]]; then
-                echo "<server>"                                             >> ${hdir}.backup-operations
-                echo "  <backupdirectory>${b_dirs[$x]}</backupdirectory>"   >> ${hdir}.backup-operations
+		    minute=$(( $hl *  $minutes ))
+		    if [[ $minute < 61 ]]; then
+			echo "<server>"                                             >> ${hdir}.backup-operations
+			echo "  <backupdirectory>${b_dirs[$x]}</backupdirectory>"   >> ${hdir}.backup-operations
 
-                if [[ "${hours}" =~ ^[0-9]$ ]]; then
-                    hour="0${hours}"
-                else
-                    hour="${hours}"
-                fi
-                if [[ "${minute}" =~ ^[0-9]$ ]]; then
-                    echo "  <intervall>${hour}:0${minute}</intervall>"      >> ${hdir}.backup-operations
-                else
-                    echo "  <intervall>${hour}:${minute}</intervall>"       >> ${hdir}.backup-operations
-                fi
+			if [[ "${hours}" =~ ^[0-9]$ ]]; then
+			    hour="0${hours}"
+			else
+			    hour="${hours}"
+			fi
+			if [[ "${minute}" =~ ^[0-9]$ ]]; then
+			    echo "  <intervall>${hour}:0${minute}</intervall>"      >> ${hdir}.backup-operations
+			else
+			    echo "  <intervall>${hour}:${minute}</intervall>"       >> ${hdir}.backup-operations
+			fi
 
 
-                echo "  <date>${b_dats[$x]}</date>"                         >> ${hdir}.backup-operations
-                echo "  <type>${b_type[$x]}</type>"                         >> ${hdir}.backup-operations
-                echo "</server>"                                            >> ${hdir}.backup-operations
-            fi
+			echo "  <date>${b_dats[$x]}</date>"                         >> ${hdir}.backup-operations
+			echo "  <type>${b_type[$x]}</type>"                         >> ${hdir}.backup-operations
+			echo "</server>"                                            >> ${hdir}.backup-operations
+		    fi
            
             done 
         done
@@ -113,6 +115,7 @@ do
     fi
                         
 done
+
 
 # Parse .backup-operations
 b_dirs=($(grep -oP '(?<=<backupdirectory>).*?(?=</backupdirectory>)' ${hdir}.backup-operations))
