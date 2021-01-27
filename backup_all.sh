@@ -45,8 +45,9 @@ else
 fi
 
 
-message="Backup b_dirs count: ${#b_dirs[@]}"
-echo $message; echo -e "Subject: $message\n\nNew message from SBE\nDir: $hdir\nb_invs: ${b_invs[@]}" | $sendmail $mail
+# Uncomment to test cron
+#message="Backup b_dirs count: ${#b_dirs[@]}"
+#echo $message; echo -e "Subject: $message\n\nNew message from SBE\nDir: $hdir\nb_invs: ${b_invs[@]}" | $sendmail $mail
 
 # # #
 # Start backups
