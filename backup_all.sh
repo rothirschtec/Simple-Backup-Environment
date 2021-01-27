@@ -38,7 +38,7 @@ if [ -f ${hdir}backup.xml ]; then
 else
 
 	message="backup.xml does not exist"
-	echo $message; echo -e "Subject: $message\n\nNew message from SBE\nDir: $hdir\nb_invs: ${b_invs[@]}" | $(which sendmail) $mail
+	echo $message; echo -e "Subject: $message\n\nNew message from SBE\nDir: $hdir\nb_invs: ${b_invs[@]}" | $sendmail $mail
     cp ${hdir}tools/backup.xml-example ${hdir}backup.xml
     echo "Please configure your backup.xml file first"
 
@@ -46,7 +46,7 @@ fi
 
 
 message="Backup b_dirs count: ${#b_dirs[@]}"
-echo $message; echo -e "Subject: $message\n\nNew message from SBE\nDir: $hdir\nb_invs: ${b_invs[@]}" | $(which sendmail) $mail
+echo $message; echo -e "Subject: $message\n\nNew message from SBE\nDir: $hdir\nb_invs: ${b_invs[@]}" | $sendmail $mail
 
 # # #
 # Start backups
@@ -169,18 +169,18 @@ do
     
             bash "${hdir}${b_dirs[$x]}/backup_server.sh" "--${b_type[$x]}" &
             message="Backup for ${b_dirs[$x]} under way..."
-	    echo $message; echo -e "Subject: $message\n\nNew message from SBE" | $(which sendmail) $mail
+	    echo $message; echo -e "Subject: $message\n\nNew message from SBE" | $sendmail $mail
 
         else
         
             message="Backup directory (${b_dirs[$x]}) doesn't exist"
-	    echo $message; echo -e "Subject: $message\n\nNew message from SBE" | $(which sendmail) $mail
+	    echo $message; echo -e "Subject: $message\n\nNew message from SBE" | $sendmail $mail
 
         fi
 
     #else                                                                          
     #	message="Backup cron, Backup not needed"
-    #	echo $message; echo -e "Subject: $message" | $(which sendmail) $mail
+    #	echo $message; echo -e "Subject: $message" | $sendmail $mail
 
     fi
 done
