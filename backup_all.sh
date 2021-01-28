@@ -170,7 +170,7 @@ do
     
             bash "${hdir}${b_dirs[$x]}/backup_server.sh" "--${b_type[$x]}" &
             message="Backup for ${b_dirs[$x]} under way..."
-	    echo $message; echo -e "Subject: $message\n\nNew message from SBE" | $sendmail $mail
+	    #echo $message; echo -e "Subject: $message\n\nNew message from SBE" | $sendmail $mail
 
         else
         
