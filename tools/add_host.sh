@@ -18,8 +18,8 @@ echo 'And restart the ssh service afterwards "service ssh restart"'
 read -p 'Approve if done [Enter]'
 echo ''
 
-#scp -P $sport ~/.ssh/id_rsa.pub $suser@${sip}:~/.ssh/authorized_keys
-ssh-copy-id -i ~/.ssh/id_rsa.pub -p $sport ${suser}@${sip}
+scp -P $sport ~/.ssh/id_rsa.pub $suser@${sip}:~/.ssh/authorized_keys
+#ssh-copy-id -i ~/.ssh/id_rsa.pub -p $sport ${suser}@${sip}
 
 echo
 echo 'Change the /etc/ssh/sshd_config back to secure'

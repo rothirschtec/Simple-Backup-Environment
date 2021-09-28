@@ -2,3 +2,4 @@ mail=root
 reports=/tmp/
 grep=/bin/grep
 sendmail=/usr/sbin/sendmail
+MBAST=1 # Max backups at same time

@@ -67,6 +67,14 @@ else
     # exit only this subshell
 fi
 
+re='^[0-9]+$'
+if [[ $MBAST =~ $re ]]; then
+	stmax=$MBAST
+else
+	stmax=2
+fi
+
+
 CURRENT_DAY=$((10#$(date +%j)))
 CURRENT_WEEK=$((10#$(date +%V)))
 CURRENT_MONTH=$((10#$(date +%m)))
@@ -133,7 +141,6 @@ if [ $BACKUP -eq 1 ]; then
 
 
 	# @5 --------------------------
-	stmax=2
 	st=$(($stmax+1))
 	sti=1
 	rm -f ${sdir}run
