@@ -230,7 +230,7 @@ write_to_queue () {
 # Notify admin user
 notify () {
 
-  [ "$@" =~ "--log" ] || echo -e "Subject: Backup Success with $name on $HOSTNAME\n\n $(cat ${sdir}bac.log)" | $sendmail $mail
+  [[ "$@" =~ "--log" ]] || echo -e "Subject: Backup Success with $name on $HOSTNAME\n\n $(cat ${sdir}bac.log)" | $sendmail $mail
 
   if [ $(cat ${sdir}err.log | wc -w | awk '{ print $1 }') -gt 0 ]; then
     echo "Script stopped: $(date +"%y-%m-%d %H:%M")" >> ${sdir}err.log
@@ -276,11 +276,16 @@ mysql_backup () {
 # backup via rsync
 rsync_backup () {
   rsync -e "ssh -p ${PORT}" "${roption[@]}" ${USER}@${SERVER}:${SHARE} ${bdir}
-  rsyncsize=${#rsyncadd[@]}
-  [ "$rsyncsize" -lt 1 ] && for radd in "${rsyncadd[@]}"
-  do
-    eval ${radd}
-  done
+
+  # If additional rsync commands exist
+  if declare -p rsyncadd >/dev/null 2>&1; then
+    rsyncsize=${#rsyncadd[@]}
+    for radd in "${rsyncadd[@]}"
+    do
+      eval ${radd}
+    done
+    return 0
+  fi
 }
 
 # Backup to a network share
@@ -312,10 +317,9 @@ tar_backup () {
 
 if [[ $@ =~ "--sshCopy" ]]; then
 
-    ssh-copy-id -i ~/.ssh/id_rsa.pub -p $PORT $USER@$SERVER
+  ssh-copy-id -i ~/.ssh/id_rsa.pub -p $PORT $USER@$SERVER
 
 elif [ $BACKUP -eq 1 ]; then
-
 
   remote_server_up || exit 1 && [[ "$@" =~ "--log" ]] && echo "Server is up"
 
