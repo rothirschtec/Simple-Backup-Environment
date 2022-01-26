@@ -322,9 +322,9 @@ elif [ $BACKUP -eq 1 ]; then
 
   [[ "$@" =~ "--log" ]] && echo "Backup process started"
 
-  remote_server_up || echo "Server is down"; exit 1 && [[ "$@" =~ "--log" ]] && echo "Server is up"
+  remote_server_up || exit 1 && [[ "$@" =~ "--log" ]] && echo "Server is up"
 
-  process_in_queue || echo "Backup already in queue"; exit 2 && [[ "$@" =~ "--log" ]] && echo "Backup was not already in queue"
+  process_in_queue || exit 2 && [[ "$@" =~ "--log" ]] && echo "Backup was not already in queue"
 
   manage_queue && [[ "$@" =~ "--log" ]] && echo "Managed queue"
 
