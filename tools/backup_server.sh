@@ -1,7 +1,7 @@
 #!/bin/bash
 #
 # You can copy your ssh key to the remote server if you want
-# main.sh sshCopy
+# backup_server.sh --sshCopy
 
 
 # Set variables
@@ -77,15 +77,14 @@ else
      BUCKET_TYPE="daily"
 fi
 
-
-bdir="${sdir}rotate_bak/${BUCKET_TYPE}/${BUCKET}_$(date +"%Y-%m-%d_%H%M%S")/"
-if [ -d ${sdir}rotate_bak/${BUCKET_TYPE}/${BUCKET}* ]; then
-  olddir=$(echo ${sdir}rotate_bak/${BUCKET_TYPE}/${BUCKET}*)
+# Create backup directory
+bdir="${sdir}rotate_bak/${BUCKET_TYPE}/${BUCKET}_$(date +"%Y-%m-%d_%H%M%S")"
+if [ -d ${sdir}rotate_bak/${BUCKET_TYPE}/${BUCKET}_* ]; then
+  olddir=$(echo ${sdir}rotate_bak/${BUCKET_TYPE}/${BUCKET}_*)
   mv $olddir $bdir
 else
   mkdir -p ${bdir}
 fi
-
 
 # FUNCTIONS
 
@@ -355,9 +354,9 @@ elif [ $BACKUP -eq 1 ]; then
 
   [[ "$@" =~ "--log" ]] && echo "Backup done"
 
-  manage_logs
+  manage_logs; [[ "$@" =~ "--log" ]] && echo "Managed logs"
 
-  notify
+  notify; [[ "$@" =~ "--log" ]] && echo "Notify"
 
 
 fi
