@@ -316,9 +316,13 @@ tar_backup () {
 
 if [[ $@ =~ "--sshCopy" ]]; then
 
+  [[ "$@" =~ "--log" ]] && echo "Copy ssh public key"
+
   ssh-copy-id -i ~/.ssh/id_rsa.pub -p $PORT $USER@$SERVER
 
 elif [ $BACKUP -eq 1 ]; then
+
+  [[ "$@" =~ "--log" ]] && echo "Backup process started"
 
   remote_server_up || exit 1 && [[ "$@" =~ "--log" ]] && echo "Server is up"
 
