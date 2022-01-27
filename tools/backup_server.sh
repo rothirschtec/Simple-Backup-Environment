@@ -87,11 +87,9 @@ if [ $n -gt 1 ]; then
   echo -e "Subject: There are multiple backups with same BID. Related name $name on $HOSTNAME\n\n" | $sendmail $mail
   exit 0
 elif [ $n -eq 1 ]; then
-  echo "exists"
   olddir=$(echo ${sdir}rotate_bak/${PERIOD}/${BID}_*)
   mv $olddir $bdir
 else
-  echo "does not exist"
   mkdir -p ${bdir}
 fi
 
