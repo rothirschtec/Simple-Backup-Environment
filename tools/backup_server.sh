@@ -61,24 +61,35 @@ CURRENT_MONTH=$((10#$(date +%m)))
 START_DATE=$(date)
 
 if [[ $@ =~ "--weekly" ]]; then
-     BUCKET=$(( CURRENT_WEEK % BWEEKS ))
-     BUCKET_TYPE="weekly"
+     BID=$(( CURRENT_WEEK % BWEEKS ))
+     PERIOD="weekly"
 elif [[ $@ =~ "--monthly" ]]; then
-     BUCKET=$(( CURRENT_MONTH % BMONTHS ))
-     BUCKET_TYPE="monthly"
+     BID=$(( CURRENT_MONTH % BMONTHS ))
+     PERIOD="monthly"
 elif [[ $@ =~ "--archive" ]]; then
-     BUCKET=$(( CURRENT_WEEK % BWEEKS ))
-     BUCKET_TYPE="archive"
+     BID=$(( CURRENT_WEEK % BWEEKS ))
+     PERIOD="archive"
      TYPE="tar"
 else
-     BUCKET=$(( CURRENT_DAY % BDAYS ))
-     BUCKET_TYPE="daily"
+     BID=$(( CURRENT_DAY % BDAYS ))
+     PERIOD="daily"
 fi
 
 # Create backup directory
-bdir="${sdir}rotate_bak/${BUCKET_TYPE}/${BUCKET}_$(date +"%Y-%m-%d_%H%M%S")"
-if [ -d ${sdir}rotate_bak/${BUCKET_TYPE}/${BUCKET}_* ]; then
-  olddir=$(echo ${sdir}rotate_bak/${BUCKET_TYPE}/${BUCKET}_*)
+bdir="${sdir}rotate_bak/${PERIOD}/${BID}_$(date +"%Y-%m-%d_%H%M%S")"
+
+n=0
+while read -r -d ''; do
+    ((n++)) # count
+    # maybe perform another act on file
+done < <(find ${sdir}rotate_bak/${PERIOD}/ -maxdepth 1 -name "${BID}_*" -print0)
+
+if [ $n > 1 ]; then
+  echo -e "Subject: There are multiple backups with same PERIOD. Related name $name on $HOSTNAME\n\n" | $sendmail $mail
+fi
+
+if [ -d ${sdir}rotate_bak/${PERIOD}/${BID}_* ]; then
+  olddir=$(echo ${sdir}rotate_bak/${PERIOD}/${BID}_*)
   mv $olddir $bdir
 else
   mkdir -p ${bdir}
@@ -94,7 +105,7 @@ remote_server_up () {
 }
 
 process_in_queue () {
-# Check if there already exists a backup process for the given server and BUCKET_TYPE
+# Check if there already exists a backup process for the given server and PERIOD
 
   # Create directory if it does not exist
   [ -d $reports ] || mkdir -p $reports
@@ -116,7 +127,7 @@ process_in_queue () {
     done < ${reports}SBE-queue
 
     # @4.2 - Check queue
-    if cat ${reports}SBE-queue | grep ${name} | grep ${BUCKET_TYPE} &> /dev/null; then
+    if cat ${reports}SBE-queue | grep ${name} | grep ${PERIOD} &> /dev/null; then
       return 1
     fi
 
@@ -152,10 +163,10 @@ manage_queue () {
 
     # @5.2 - Add the remote server to the queue if the PID does not exist
     if [ ! -f ${reports}SBE-queue ]; then
-      echo "$$; ${START_DATE}; ${name}; ${BUCKET_TYPE};" >> ${reports}SBE-queue
+      echo "$$; ${START_DATE}; ${name}; ${PERIOD};" >> ${reports}SBE-queue
     else
       if ! cat ${reports}SBE-queue | grep $$ &> /dev/null; then
-        echo "$$; ${START_DATE}; ${name}; ${BUCKET_TYPE};" >> ${reports}SBE-queue
+        echo "$$; ${START_DATE}; ${name}; ${PERIOD};" >> ${reports}SBE-queue
       fi
     fi
 
@@ -246,7 +257,7 @@ manage_logs () {
 # mysql Backup
 mysql_backup () {
 
-  bmdi="${sdir}mysql/${BUCKET_TYPE}/${BUCKET}/"
+  bmdi="${sdir}mysql/${PERIOD}/${BID}/"
   mkdir -p ${bmdi}
 
   # Get mySqlPort
@@ -259,7 +270,7 @@ mysql_backup () {
   if [ $(wc -c ${sdir}err.log | awk '{print $1}') -eq 0 ]; then
     sleep 2
     # $1:mysql config file, $2:backupdir, $3:sendmail(1/0), $4:mail mail, $5:delete backups after
-    if [[ "$BUCKET_TYPE" == "weekly" ]]; then
+    if [[ "$PERIOD" == "weekly" ]]; then
       /bin/bash ${rdir}tools/mysql-backup.sh "${sdir}mysql.cnf" "${bmdi}" "$sdir" "$MBWEEKS"
     else
       /bin/bash ${rdir}tools/mysql-backup.sh "${sdir}mysql.cnf" "${bmdi}" "$sdir" "$MBDAYS"
@@ -350,7 +361,7 @@ elif [ $BACKUP -eq 1 ]; then
     rm -f ${sdir}run
     sed -i "/^$cID;.*$/d" ${reports}SBE-queue-run
 
-    echo "$cID; ${START_DATE}; ${name}; ${BUCKET_TYPE}; $(date);" >> ${reports}SBE-done
+    echo "$cID; ${START_DATE}; ${name}; ${PERIOD}; $(date);" >> ${reports}SBE-done
 
   ) >> ${sdir}bac.log | tee ${rdir}all.log 2> ${sdir}err.log | tee ${rdir}all.log
 
