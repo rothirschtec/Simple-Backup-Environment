@@ -85,7 +85,7 @@ while read -r -d ''; do
 done < <(find ${sdir}rotate_bak/${PERIOD}/ -maxdepth 1 -name "${BID}_*" -print0)
 
 if [ $n > 1 ]; then
-  echo -e "Subject: There are multiple backups with same PERIOD. Related name $name on $HOSTNAME\n\n" | $sendmail $mail
+  echo -e "Subject: There are multiple backups with same BID. Related name $name on $HOSTNAME\n\n" | $sendmail $mail
 fi
 
 if [ -d ${sdir}rotate_bak/${PERIOD}/${BID}_* ]; then
