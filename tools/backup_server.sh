@@ -80,18 +80,18 @@ bdir="${sdir}rotate_bak/${PERIOD}/${BID}_$(date +"%Y-%m-%d_%H%M%S")"
 
 n=0
 while read -r -d ''; do
-    ((n++)) # count
-    # maybe perform another act on file
+  ((n++))
 done < <(find ${sdir}rotate_bak/${PERIOD}/ -maxdepth 1 -name "${BID}_*" -print0)
 
-if [ $n > 1 ]; then
+if [ $n -gt 1 ]; then
   echo -e "Subject: There are multiple backups with same BID. Related name $name on $HOSTNAME\n\n" | $sendmail $mail
-fi
-
-if [ -d ${sdir}rotate_bak/${PERIOD}/${BID}_* ]; then
+  exit 0
+elif [ $n -eq 1 ]; then
+  echo "exists"
   olddir=$(echo ${sdir}rotate_bak/${PERIOD}/${BID}_*)
   mv $olddir $bdir
 else
+  echo "does not exist"
   mkdir -p ${bdir}
 fi
 
