@@ -3,12 +3,14 @@
 
 # But not these files...
 !.gitignore
+!SBE_data
 !SBE_data/main.sh
 !SBE_data/status.sh
 !SBE_data/create_bac.sh
 !SBE_data/dist2server.sh
 !LICENSE
 !README.md
+!SBE_docker
 !SBE_docker/Dockerfile
 # etc...
 
@@ -18,4 +20,5 @@
 # if the files to be tracked are in subdirectories
 #!*/a/b/file1.txt
 #!*/a/b/c/*
+!SBE_data/tools
 !SBE_data/tools/*

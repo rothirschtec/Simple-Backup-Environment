@@ -1,0 +1,6 @@
+[client]
+host='127.0.0.1'
+user='!#mysqlUSER#!'
+port='3309'
+password='!#mysqlPASS#!'
+#remoteport='!#mysqlPORT#!'
