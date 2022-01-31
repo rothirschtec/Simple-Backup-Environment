@@ -11,9 +11,17 @@ cd $(dirname $0)
 sdir="$PWD"
 name=${sdir##*/}
 sdir="${sdir}/"
+
 cd ..
 rdir="$PWD/"
 error=false
+
+# Backup Directory
+bdir="none"
+# Backup mounted loop device
+bdisk="none"
+# loop device mount location
+bmount="none"
 
 # Dates and types
 BDAYS=1
@@ -75,31 +83,65 @@ else
      PERIOD="daily"
 fi
 
-# Create backup directory
-bdir="${sdir}rotate_bak/${PERIOD}/${BID}_$(date +"%Y-%m-%d_%H%M%S")"
-
-n=0
-while read -r -d ''; do
-  ((n++))
-done < <(find ${sdir}rotate_bak/${PERIOD}/ -maxdepth 1 -name "${BID}_*" -print0)
-
-if [ $n -gt 1 ]; then
-  echo -e "Subject: There are multiple backups with same BID. Related name $name on $HOSTNAME\n\n" | $sendmail $mail
-  exit 0
-elif [ $n -eq 1 ]; then
-  olddir=$(echo ${sdir}rotate_bak/${PERIOD}/${BID}_*)
-  mv $olddir $bdir
-else
-  mkdir -p ${bdir}
-fi
 
 # FUNCTIONS
+
+# Create backup directory
+create_backup_directory () {
+
+  bdir="${bmount}${PERIOD}/${BID}_$(date +"%Y-%m-%d_%H%M%S")"
+
+  n=0
+  while read -r -d ''; do
+    ((n++))
+  done < <(find ${bmount}${PERIOD}/ -maxdepth 1 -name "${BID}_*" -print0)
+
+  if [ $n -gt 1 ]; then
+    echo -e "Subject: There are multiple backups with same BID. Related name $name on $HOSTNAME\n\n" | $sendmail $mail
+    exit 4
+  elif [ $n -eq 1 ]; then
+    olddir=$(echo ${bmount}${PERIOD}/${BID}_*)
+    mv $olddir $bdir
+  else
+    mkdir -p ${bdir}
+  fi
+
+}
+
 
 remote_server_up () {
 
   # Check if remote server is availabe for backup operations
 	ssh ${USER}@$SERVER -p $PORT "echo 2>&1" && return 0 || return 1
 
+}
+
+get_backup_mount () {
+  for disk in /dev/loop*; do
+    if test -b $disk; then
+      backingfile=$(udisksctl info -b $disk |grep BackingFile)
+      if [[ $backingfile =~ ${sdir}backups ]]; then
+        # Find MountPoints and remove unneeded information
+        bmount="$(udisksctl info -b $disk | grep 'MountPoints:' | awk -F ':' '{print $2}' | sed -e 's/^[ \t]*//')/"
+        bdisk=$disk
+      fi
+    fi
+  done
+}
+
+mount_backup_directory () {
+  get_backup_mount
+  if [[ $bmount == 'none' ]]; then
+    [[ "$@" =~ "--log" ]] && echo "Mount ${sdir}backups"
+    udisksctl loop-setup -f ${sdir}backups
+    get_backup_mount
+  fi
+  #sudo chown -R $USER:$USER ${bmount}
+  #chown -R $USER:$USER ${bmount}
+}
+
+umount_backup_directory () {
+  udisksctl unmount -b ${bdisk}
 }
 
 process_in_queue () {
@@ -333,6 +375,10 @@ elif [ $BACKUP -eq 1 ]; then
 
   remote_server_up || exit 1 && [[ "$@" =~ "--log" ]] && echo "Server is up"
 
+  mount_backup_directory
+
+  create_backup_directory
+
   process_in_queue || exit 2 && [[ "$@" =~ "--log" ]] && echo "Backup was not already in queue"
 
   manage_queue && [[ "$@" =~ "--log" ]] && echo "Managed queue"
@@ -366,6 +412,8 @@ elif [ $BACKUP -eq 1 ]; then
   [[ "$@" =~ "--log" ]] && echo "Backup done"
 
   manage_logs; [[ "$@" =~ "--log" ]] && echo "Managed logs"
+
+  umount_backup_directory
 
   notify; [[ "$@" =~ "--log" ]] && echo "Notify"
 
