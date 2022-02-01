@@ -29,6 +29,7 @@ sip=""
 # SSH port of the server
 sport=""
 
+[[ "$@" =~ "--encrypted" ]] && encrypted=1 ||  encrypted=0
 
 
 get_information () {
@@ -78,26 +79,30 @@ close_ssh () {
 
 # Encrypt and store passphrase
 encrypt_backup_directory () {
-  passphrase=$(pwgen -s 64 1)
+  passphrase=$(pwgen -s 16 1)
   echo -n "$passphrase" | cryptsetup -y luksFormat --type luks2 ${bdir}backups
   echo -n "$passphrase" | cryptsetup luksOpen --type luks2 ${bdir}backups ${sname}.mounted
   echo $passphrase > ${bdir}passphrase
+  mkfs.ext4 /dev/mapper/${sname}.mounted
 }
 
 # Create filesystem with backup maximum size
 create_backup_directory () {
+
   bdir="${SBE_dir}${sname}/"
+  [[ -d $bdir ]] && echo "Backup directory exists already" && exit 2
+
   mkdir -p $bdir
-  touch ${bdir}backups
   mkdir ${bdir}.mounted
+  touch ${bdir}backups
   fallocate -l $bmaxsize ${bdir}backups
-  encrypt_backup_directory
-  mkfs.ext4 /dev/mapper/${sname}.mounted
+  [[ $encrypted -eq 1 ]] && encrypt_backup_directory || mkfs.ext4 ${bdir}backups
+
 }
 
 # Simply mount backup image
 mount_backup_directory () {
-  mount /dev/mapper/${sname}.mounted ${bdir}.mounted
+  [[ $encrypted -eq 1 ]] && mount /dev/mapper/${sname}.mounted ${bdir}.mounted ||  mount ${bdir}backups ${bdir}.mounted
 }
 
 # Simply unmount backup image
@@ -114,6 +119,7 @@ fill_backup_directory () {
   sed -i 's/!#IPadress#!/'$sip'/g'        ${bdir}server.config
   sed -i 's/!#Port#!/'$sport'/g'          ${bdir}server.config
   sed -i 's/!#User#!/'$suser'/g'          ${bdir}server.config
+  sed -i "s/ENCRYPTED=.*/ENCRYPTED=${encrypted}/g" ${bdir}server.config
 
 }
 
@@ -141,10 +147,14 @@ fill_backup_directory
 echo "..."
 echo "Configuration finished"
 
-echo "..."
-echo "Starting first backup"
-/bin/bash ${bdir}backup_server.sh &
-echo "You can kill the process with - kill $!"
+
+read -p 'Shall I start the first backup process? (y): ' a
+if [[ $a =~ [Yy] ]]; then
+  echo "..."
+  echo "Starting first backup"
+  /bin/bash ${bdir}backup_server.sh &
+  echo "You can kill the process with - kill $!"
+fi
 
 exit 0
 

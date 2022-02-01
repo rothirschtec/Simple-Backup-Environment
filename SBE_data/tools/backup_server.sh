@@ -95,14 +95,18 @@ remote_server_up () {
 # Decrypt backup
 decrypt_backup_directory () {
   passphrase=$(cat ${sdir}passphrase)
-  echo -n "$passphrase" | cryptsetup luksOpen --type luks2 ${bdir}backups ${sname}.mounted
+  echo -n "$passphrase" | cryptsetup luksOpen --type luks2 ${sdir}backups ${sname}.mounted
 }
 
 # Mount decrypted backup directory
 mount_backup_directory () {
   if ! mount | grep "${sdir}.mounted" > /dev/null; then
-    decrypt_backup_directory
-    mount /dev/mapper/${sname}.mounted ${sdir}.mounted
+    if [[ $ENCRYPTED -eq 1 ]]; then
+      decrypt_backup_directory
+      mount /dev/mapper/${sname}.mounted ${sdir}.mounted
+    else
+      mount ${sdir}backups ${sdir}.mounted
+    fi
   fi
   bmount="${sdir}.mounted/"
 }
@@ -110,7 +114,9 @@ mount_backup_directory () {
 # Simply unmount backup image
 umount_backup_directory () {
   umount ${sdir}.mounted
-  cryptsetup luksClose ${sname}.mounted
+  if [[ $ENCRYPTED -eq 1 ]]; then
+    cryptsetup luksClose ${sname}.mounted
+  fi
 }
 
 # Create backup directory
@@ -367,9 +373,9 @@ elif [ $BACKUP -eq 1 ]; then
 
   remote_server_up || exit 1 && [[ "$@" =~ "--log" ]] && echo "Server is up"
 
-  mount_backup_directory
+  mount_backup_directory || exit 4 && [[ "$@" =~ "--log" ]] && echo "Backup directory mounted"
 
-  create_backup_directory
+  create_backup_directory || exit 5 && [[ "$@" =~ "--log" ]] && echo "Backup directory created"
 
   process_in_queue || exit 2 && [[ "$@" =~ "--log" ]] && echo "Backup was not already in queue"
 
