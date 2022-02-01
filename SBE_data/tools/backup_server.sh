@@ -86,6 +86,23 @@ fi
 
 # FUNCTIONS
 
+
+# Check if remote server is availabe for backup operations
+remote_server_up () {
+	ssh ${USER}@$SERVER -p $PORT "echo 2>&1" && return 0 || return 1
+}
+
+mount_backup_directory () {
+  if ! mount | grep "${sdir}.mounted" > /dev/null; then
+    mount ${sdir}backups ${sdir}.mounted
+  fi
+  bmount=${sdir}.mounted
+}
+
+umount_backup_directory () {
+  umount ${sdir}.mounted
+}
+
 # Create backup directory
 create_backup_directory () {
 
@@ -94,7 +111,7 @@ create_backup_directory () {
   n=0
   while read -r -d ''; do
     ((n++))
-  done < <(find ${bmount}${PERIOD}/ -maxdepth 1 -name "${BID}_*" -print0)
+  done < <(find ${bmount}/${PERIOD}/ -maxdepth 1 -name "${BID}_*" -print0)
 
   if [ $n -gt 1 ]; then
     echo -e "Subject: There are multiple backups with same BID. Related name $name on $HOSTNAME\n\n" | $sendmail $mail
@@ -106,42 +123,6 @@ create_backup_directory () {
     mkdir -p ${bdir}
   fi
 
-}
-
-
-remote_server_up () {
-
-  # Check if remote server is availabe for backup operations
-	ssh ${USER}@$SERVER -p $PORT "echo 2>&1" && return 0 || return 1
-
-}
-
-get_backup_mount () {
-  for disk in /dev/loop*; do
-    if test -b $disk; then
-      backingfile=$(udisksctl info -b $disk |grep BackingFile)
-      if [[ $backingfile =~ ${sdir}backups ]]; then
-        # Find MountPoints and remove unneeded information
-        bmount="$(udisksctl info -b $disk | grep 'MountPoints:' | awk -F ':' '{print $2}' | sed -e 's/^[ \t]*//')/"
-        bdisk=$disk
-      fi
-    fi
-  done
-}
-
-mount_backup_directory () {
-  get_backup_mount
-  if [[ $bmount == 'none' ]]; then
-    [[ "$@" =~ "--log" ]] && echo "Mount ${sdir}backups"
-    udisksctl loop-setup -f ${sdir}backups
-    get_backup_mount
-  fi
-  #sudo chown -R $USER:$USER ${bmount}
-  #chown -R $USER:$USER ${bmount}
-}
-
-umount_backup_directory () {
-  udisksctl unmount -b ${bdisk}
 }
 
 process_in_queue () {
@@ -195,7 +176,6 @@ manage_queue () {
 	rm -f ${sdir}run
   while [ "$st" -ge "$stmax" ]
 	do
-
 
     # @5.1 - Delete empty lines in queue files
     sed -i '/^$/d' ${reports}SBE-queue
@@ -259,9 +239,9 @@ manage_queue () {
 
       fi
 
-	    else
-		      st=$(($stmax-1))
-	    fi
+    else
+	      st=$(($stmax-1))
+    fi
 
 	done
 
@@ -394,7 +374,6 @@ elif [ $BACKUP -eq 1 ]; then
     echo "Backup Directory: $bdir"
     echo ""
 
-    # Backup
     tc=0
     [[ $TYPE == "rsync" ]] && rsync_backup; tc=1
     [[ $TYPE == "share" ]] && share_backup; tc=1

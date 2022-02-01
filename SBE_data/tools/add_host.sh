@@ -64,7 +64,6 @@ open_ssh () {
 # Transfer SSH publick key
 transfer_public_key () {
   scp -P $sport ~/.ssh/id_rsa.pub $suser@${sip}:~/.ssh/authorized_keys
-  #ssh-copy-id -i ~/.ssh/id_rsa.pub -p $sport ${suser}@${sip}
 }
 
 # Inform user how to secure ssh on the remote server
@@ -84,11 +83,17 @@ create_backup_directory () {
   touch ${bdir}backups
   fallocate -l $bmaxsize ${bdir}backups
   mkfs.ext4 ${bdir}backups
+  mkdir ${bdir}.mounted
 }
 
+# Simply mount backup image
 mount_backup_directory () {
-  mkdir -p ${bdir}.mounted
-  mount -t ext4 -o loop ${bdir}backups ${bdir}.mounted
+  mount ${bdir}backups ${bdir}.mounted
+}
+
+# Simply unmount backup image
+umount_backup_directory () {
+  umount ${bdir}.mounted
 }
 
 fill_backup_directory () {
@@ -129,7 +134,7 @@ echo "Configuration finished"
 
 echo "..."
 echo "Starting first backup"
-#/bin/bash ${bdir}backup_server.sh &
+/bin/bash ${bdir}backup_server.sh &
 echo "You can kill the process with - kill $!"
 
 exit 0

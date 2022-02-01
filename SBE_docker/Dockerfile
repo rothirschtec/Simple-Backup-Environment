@@ -20,7 +20,9 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
         vim             \
         wget            \
         openssh-server  \
+        sendmail        \
     && rm -rf /var/lib/apt/lists/*
+#
 
 # Make workdir where to store the files
 #
@@ -29,7 +31,11 @@ WORKDIR $workdir
 
 EXPOSE 22
 
-RUN echo "root:root" | chpasswd
+ARG workdir=/root/SBE/SBE_data
+ARG reportdir=/root/SBE/SBE_reports
+RUN mkdir -p $workdir \
+	&& mkdir -p $reportdir
+WORKDIR $workdir
 
 RUN service ssh start
 
