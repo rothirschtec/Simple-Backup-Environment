@@ -20,6 +20,8 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
         vim             \
         wget            \
         openssh-server  \
+        pwgen           \
+        cryptsetup      \
         sendmail        \
     && rm -rf /var/lib/apt/lists/*
 #

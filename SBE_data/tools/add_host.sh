@@ -76,19 +76,28 @@ close_ssh () {
   read -p 'Approve if done [Enter]'
 }
 
+# Encrypt and store passphrase
+encrypt_backup_directory () {
+  passphrase=$(pwgen -s 64 1)
+  echo -n "$passphrase" | cryptsetup -y luksFormat --type luks2 ${bdir}backups
+  echo -n "$passphrase" | cryptsetup luksOpen --type luks2 ${bdir}backups ${sname}.mounted
+  echo $passphrase > ${bdir}passphrase
+}
+
 # Create filesystem with backup maximum size
 create_backup_directory () {
   bdir="${SBE_dir}${sname}/"
   mkdir -p $bdir
   touch ${bdir}backups
-  fallocate -l $bmaxsize ${bdir}backups
-  mkfs.ext4 ${bdir}backups
   mkdir ${bdir}.mounted
+  fallocate -l $bmaxsize ${bdir}backups
+  encrypt_backup_directory
+  mkfs.ext4 /dev/mapper/${sname}.mounted
 }
 
 # Simply mount backup image
 mount_backup_directory () {
-  mount ${bdir}backups ${bdir}.mounted
+  mount /dev/mapper/${sname}.mounted ${bdir}.mounted
 }
 
 # Simply unmount backup image

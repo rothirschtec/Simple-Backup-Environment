@@ -9,7 +9,7 @@
 # Directories
 cd $(dirname $0)
 sdir="$PWD"
-name=${sdir##*/}
+sname=${sdir##*/}
 sdir="${sdir}/"
 
 cd ..
@@ -92,15 +92,25 @@ remote_server_up () {
 	ssh ${USER}@$SERVER -p $PORT "echo 2>&1" && return 0 || return 1
 }
 
-mount_backup_directory () {
-  if ! mount | grep "${sdir}.mounted" > /dev/null; then
-    mount ${sdir}backups ${sdir}.mounted
-  fi
-  bmount=${sdir}.mounted
+# Decrypt backup
+decrypt_backup_directory () {
+  passphrase=$(cat ${sdir}passphrase)
+  echo -n "$passphrase" | cryptsetup luksOpen --type luks2 ${bdir}backups ${sname}.mounted
 }
 
+# Mount decrypted backup directory
+mount_backup_directory () {
+  if ! mount | grep "${sdir}.mounted" > /dev/null; then
+    decrypt_backup_directory
+    mount /dev/mapper/${sname}.mounted ${sdir}.mounted
+  fi
+  bmount="${sdir}.mounted/"
+}
+
+# Simply unmount backup image
 umount_backup_directory () {
   umount ${sdir}.mounted
+  cryptsetup luksClose ${sname}.mounted
 }
 
 # Create backup directory
@@ -109,12 +119,14 @@ create_backup_directory () {
   bdir="${bmount}${PERIOD}/${BID}_$(date +"%Y-%m-%d_%H%M%S")"
 
   n=0
-  while read -r -d ''; do
-    ((n++))
-  done < <(find ${bmount}/${PERIOD}/ -maxdepth 1 -name "${BID}_*" -print0)
+  if [ -d ${bmount}${PERIOD} ]; then
+    while read -r -d ''; do
+      ((n++))
+    done < <(find ${bmount}${PERIOD}/ -maxdepth 1 -name "${BID}_*" -print0)
+  fi
 
   if [ $n -gt 1 ]; then
-    echo -e "Subject: There are multiple backups with same BID. Related name $name on $HOSTNAME\n\n" | $sendmail $mail
+    echo -e "Subject: There are multiple backups with same BID. Related name $sname on $HOSTNAME\n\n" | $sendmail $mail
     exit 4
   elif [ $n -eq 1 ]; then
     olddir=$(echo ${bmount}${PERIOD}/${BID}_*)
@@ -148,7 +160,7 @@ process_in_queue () {
     done < ${reports}SBE-queue
 
     # @4.2 - Check queue
-    if cat ${reports}SBE-queue | grep ${name} | grep ${PERIOD} &> /dev/null; then
+    if cat ${reports}SBE-queue | grep ${sname} | grep ${PERIOD} &> /dev/null; then
       return 1
     fi
 
@@ -183,10 +195,10 @@ manage_queue () {
 
     # @5.2 - Add the remote server to the queue if the PID does not exist
     if [ ! -f ${reports}SBE-queue ]; then
-      echo "$$; ${START_DATE}; ${name}; ${PERIOD};" >> ${reports}SBE-queue
+      echo "$$; ${START_DATE}; ${sname}; ${PERIOD};" >> ${reports}SBE-queue
     else
       if ! cat ${reports}SBE-queue | grep $$ &> /dev/null; then
-        echo "$$; ${START_DATE}; ${name}; ${PERIOD};" >> ${reports}SBE-queue
+        echo "$$; ${START_DATE}; ${sname}; ${PERIOD};" >> ${reports}SBE-queue
       fi
     fi
 
@@ -217,7 +229,7 @@ manage_queue () {
       done < ${reports}SBE-queue-run
 
       # @5.3.4 - Check if there's already a backup process for the remote server in queue-run. If so, use next entry in queue
-      if ! cat ${reports}SBE-queue-run | grep ${name} &> /dev/null; then
+      if ! cat ${reports}SBE-queue-run | grep ${sname} &> /dev/null; then
 
         # @5.3.5 - End loop if queue exists and queue run count is less then stmax
         if [[ $queue =~ "$$;" ]]; then
@@ -250,7 +262,7 @@ manage_queue () {
 write_to_queue () {
 
   cID=$$
-  echo "$cID; ${START_DATE}; ${name};" >> ${reports}SBE-queue-run
+  echo "$cID; ${START_DATE}; ${sname};" >> ${reports}SBE-queue-run
   sed -i "/^$cID;.*$/d" ${reports}SBE-queue
 
 }
@@ -258,11 +270,11 @@ write_to_queue () {
 # Notify admin user
 notify () {
 
-  [[ "$@" =~ "--log" ]] || echo -e "Subject: Backup Success with $name on $HOSTNAME\n\n $(cat ${sdir}bac.log)" | $sendmail $mail
+  [[ "$@" =~ "--log" ]] || echo -e "Subject: Backup Success with $sname on $HOSTNAME\n\n $(cat ${sdir}bac.log)" | $sendmail $mail
 
   if [ $(cat ${sdir}err.log | wc -w | awk '{ print $1 }') -gt 0 ]; then
     echo "Script stopped: $(date +"%y-%m-%d %H:%M")" >> ${sdir}err.log
-    echo -e "Subject: Backup Error with $name on $HOSTNAME\n\n $(cat ${sdir}err.log)" | $sendmail $mail
+    echo -e "Subject: Backup Error with $sname on $HOSTNAME\n\n $(cat ${sdir}err.log)" | $sendmail $mail
     exit 1
   fi
 
@@ -384,7 +396,7 @@ elif [ $BACKUP -eq 1 ]; then
     rm -f ${sdir}run
     sed -i "/^$cID;.*$/d" ${reports}SBE-queue-run
 
-    echo "$cID; ${START_DATE}; ${name}; ${PERIOD}; $(date);" >> ${reports}SBE-done
+    echo "$cID; ${START_DATE}; ${sname}; ${PERIOD}; $(date);" >> ${reports}SBE-done
 
   ) >> ${sdir}bac.log | tee ${rdir}all.log 2> ${sdir}err.log | tee ${rdir}all.log
 
