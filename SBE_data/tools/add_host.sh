@@ -128,12 +128,12 @@ fill_backup_directory () {
 get_information
 
 show_information
-read -p 'Do you want to continue with this settings? (y): ' a
-[[ $a =~ [Yy] ]] || exit 1
+read -p 'Do you want to continue with this settings? (y/N): ' a
+[[ $a == [Yy] ]] || exit 1
 
 
-read -p 'Transfer SSH pub key? (y): ' a
-if [[ $a =~ [Yy] ]]; then
+read -p 'Transfer SSH pub key? (y/N): ' a
+if [[ $a == [Yy] ]]; then
   open_ssh
   transfer_public_key
   close_ssh
@@ -148,8 +148,8 @@ echo "..."
 echo "Configuration finished"
 
 
-read -p 'Shall I start the first backup process? (y): ' a
-if [[ $a =~ [Yy] ]]; then
+read -p 'Shall I start the first backup process? (y/N): ' a
+if [[ $a == [Yy] ]]; then
   echo "..."
   echo "Starting first backup"
   /bin/bash ${bdir}backup_server.sh &
@@ -157,35 +157,3 @@ if [[ $a =~ [Yy] ]]; then
 fi
 
 exit 0
-
-# mariadb
-if [[ $mysqlIF == "true" ]]; then
-
-  read -p "Is there a mysql server to backup? (true): " mysqlIF
-  if [[ $mysqlIF != "true" ]]; then mysqlIF="false"; fi
-  sed -i "s/!#mysqlIF#!/${mysqlIF}/g" ${bdir}server.config
-
-    if pwgen &> /dev/null; then
-    	mPa="$(pwgen -c -n -y -B -1 24 | tr '`"' '$@')"
-    else
-    	mPa="ThisIsNotAStrongPassword"
-    fi
-    echo
-    echo 'Create an user on the mysql server'
-    echo 'bash: mysql -u root -p'
-    echo "mysql: GRANT ALL PRIVILEGES ON *.* to SBE@'localhost' IDENTIFIED BY '$mPa';"
-    echo 'mysql: FLUSH PRIVILEGES;'
-    echo 'mysql: quit'
-    read -p 'Approve if done [Enter]'
-
-
-	read -e -p "MySQL User: " -i "SBE" mUs
-	read -e -p "MySQL Port: " -i "3306" mPo
-	echo "MySQL Pass: " $mPa
-
-	rsync -a ${SBE_dir}tools/mysql.cnf     ${bmount}
-	sed -i 's/!#mysqlUSER#!/'$mUs'/g'   ${bmount}mysql.cnf
-	sed -i 's/!#mysqlPASS#!/'$mPa'/g'   ${bmount}mysql.cnf
-	sed -i 's/!#mysqlPORT#!/'$mPo'/g'   ${bmount}mysql.cnf
-	sed -i 's/!#mysqlIF#!/true/g'       ${bmount}server.config
-fi

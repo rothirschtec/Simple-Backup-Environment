@@ -3,7 +3,6 @@
 # You can copy your ssh key to the remote server if you want
 # backup_server.sh --sshCopy
 
-
 # Set variables
 
 # Directories
@@ -41,12 +40,10 @@ else
     source ${rdir}tools/config_example
 fi
 if [ -f ${sdir}server.config ]; then
-    mysqlIF="false"
     source ${sdir}server.config
 else
-    >&2 echo "No server.config found!!!"
-    error=true
-    # exit only this subshell
+    echo "No server.config found!!!"
+    exit 6
 fi
 
 re='^[0-9]+$'
@@ -143,8 +140,8 @@ create_backup_directory () {
 
 }
 
-process_in_queue () {
 # Check if there already exists a backup process for the given server and PERIOD
+process_in_queue () {
 
   # Create directory if it does not exist
   [ -d $reports ] || mkdir -p $reports
@@ -286,38 +283,7 @@ notify () {
 
 }
 
-manage_logs () {
-  if [ -f ${sdir}mysql/mysql_err.log ]; then
-      echo ${sdir}mysql/mysql_err.log >> ${sdir}err.log
-  fi
-}
 
-# mysql Backup
-mysql_backup () {
-
-  bmdi="${sdir}mysql/${PERIOD}/${BID}/"
-  mkdir -p ${bmdi}
-
-  # Get mySqlPort
-  myPort=$(myPort=$(cat ${sdir}mysql.cnf |grep 'remoteport='); echo $myPort |grep -oP "(?<=').*?(?=')";)
-  mylocp=$(sed "s/'//g" <<<$(sed 's/port=//g' <<<$(cat ${sdir}mysql.cnf |grep '^port=')))
-
-  ssh -p ${PORT} -o ServerAliveInterval=10 -M -T -M -N -L $mylocp:127.0.0.1:${myPort} ${USER}@${SERVER} 2>  ${sdir}err.log &
-  pid=$!
-  echo "Got pid $pid ..."
-  if [ $(wc -c ${sdir}err.log | awk '{print $1}') -eq 0 ]; then
-    sleep 2
-    # $1:mysql config file, $2:backupdir, $3:sendmail(1/0), $4:mail mail, $5:delete backups after
-    if [[ "$PERIOD" == "weekly" ]]; then
-      /bin/bash ${rdir}tools/mysql-backup.sh "${sdir}mysql.cnf" "${bmdi}" "$sdir" "$MBWEEKS"
-    else
-      /bin/bash ${rdir}tools/mysql-backup.sh "${sdir}mysql.cnf" "${bmdi}" "$sdir" "$MBDAYS"
-    fi
-  fi
-  echo "kill tunnel with $pid..."
-  kill -9 $pid
-  wait $pid 2>/dev/null
-}
 
 # backup via rsync
 rsync_backup () {
@@ -348,15 +314,11 @@ share_backup () {
   fi
 }
 
+# Create
 tar_backup () {
    echo "Tar Archive Backup"
-   mkdir -p ${sdir}archive/
-   ssh -p ${PORT} ${USER}@${SERVER} tar czf - ${SHARE} > ${sdir}archive/file.tar.gz
-   rsyncsize=${#rsyncadd[@]}
-   [ "$rsyncsize" -lt 1 ] && for radd in "${rsyncadd[@]}"
-   do
-      eval ${radd}
-   done
+   mkdir -p ${sdir}.mounted/archives/
+   ssh -p ${PORT} ${USER}@${SERVER} tar czf - ${SHARE} > ${sdir}.mounted/archives/$(date +"%y-%m-%d_%H:%M").tar.gz
 }
 
 # MAIN
@@ -386,13 +348,12 @@ elif [ $BACKUP -eq 1 ]; then
 
   # Backup process
   (
-    [[ $mysqlIF == "true" ]] && mysql_backup
-
     echo "Starting Backup: $(date +"%y-%m-%d %H:%M")"
     echo "Backup Directory: $bdir"
     echo ""
 
     tc=0
+    [[ "$@" =~ "--log" ]] && echo "Starting backup type: $TYPE"
     [[ $TYPE == "rsync" ]] && rsync_backup; tc=1
     [[ $TYPE == "share" ]] && share_backup; tc=1
     [[ $TYPE == "tar" ]] && tar_backup; tc=1
@@ -408,11 +369,10 @@ elif [ $BACKUP -eq 1 ]; then
 
   [[ "$@" =~ "--log" ]] && echo "Backup done"
 
-  manage_logs; [[ "$@" =~ "--log" ]] && echo "Managed logs"
-
   umount_backup_directory
 
   notify; [[ "$@" =~ "--log" ]] && echo "Notify"
 
-
 fi
+
+exit 0
