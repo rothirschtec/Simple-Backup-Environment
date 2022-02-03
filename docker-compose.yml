@@ -10,7 +10,8 @@ services:
     volumes:
       - ${sshdir}:/root/.ssh
       - ./:/opt/SBE
-      - ${reportsdir}/:/tmp/SBE_reports
+      - ${reportsdir}:/tmp/SBE_reports
+      - ${sbdir}:/tmp/SBE_settings
     networks:
       - debian-net
 

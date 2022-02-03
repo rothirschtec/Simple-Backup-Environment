@@ -4,8 +4,9 @@ cd $(dirname $0)
 sdir="$PWD/"
 cd ..
 hdir="$PWD/"
-bdir="/var/backups/RT-Blog-SBE_settings/"
-mkdir -p $bdir
+
+source ${hdir}config
+mkdir -p $sbdir
 
 for x in ${hdir}*; do
 
@@ -14,10 +15,7 @@ for x in ${hdir}*; do
         server=${x##*/}
         echo "Backup: ${server}"
         server="${server}/"
-        rsync -a ${destination}server.config ${bdir}${server}
-        if [ -f ${destination}mysql.cnf ]; then
-            rsync -a ${destination}mysql.cnf ${bdir}${server}
-        fi
+        rsync -a ${destination}server.config ${sbdir}${server}
     fi
 
 done
