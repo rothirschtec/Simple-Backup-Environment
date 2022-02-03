@@ -11,6 +11,7 @@
 !SBE_data/dist2server.sh
 !LICENSE
 !README.md
+!docker-compose.yml
 !SBE_docker
 !SBE_docker/Dockerfile
 # etc...

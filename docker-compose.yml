@@ -1,0 +1,23 @@
+version: '3.5'
+services:
+
+  sbe:
+    build: SBE_docker
+    hostname: sbe.${domain}
+    container_name: sbe.${domain}
+    restart: unless-stopped
+    privileged: true
+    ports:
+      - "903:22"
+    volumes:
+      - ${sshdir}:/root/.ssh
+      - ./:/opt/SBE
+      - ${reportsdir}./:/opt/SBE/SBE_reports
+    networks:
+      - debian-net
+
+networks:
+  debian-net:
+    ipam:
+      config:
+        - subnet: 172.23.238.0/24
