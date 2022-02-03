@@ -66,19 +66,25 @@ CURRENT_MONTH=$((10#$(date +%m)))
 START_DATE=$(date)
 
 if [[ $@ =~ "--weekly" ]]; then
-     BID=$(( CURRENT_WEEK % BWEEKS ))
-     PERIOD="weekly"
+  [[ $BWEEKS -eq 0 ]] && echo "BWEEKS is set to 0 in server.config" && exit 6
+  BID=$(( CURRENT_WEEK % BWEEKS ))
+  PERIOD="weekly"
 elif [[ $@ =~ "--monthly" ]]; then
-     BID=$(( CURRENT_MONTH % BMONTHS ))
-     PERIOD="monthly"
+  [[ $BMONTHS -eq 0 ]] && echo "BMONTHS is set to 0 in server.config" && exit 6
+  BID=$(( CURRENT_MONTH % BMONTHS ))
+  PERIOD="monthly"
 elif [[ $@ =~ "--archive" ]]; then
-     BID=0
-     PERIOD="archive"
-     TYPE="tar"
+  BID=$(( CURRENT_WEEK % BWEEKS ))
+  PERIOD="archive"
+  TYPE="tar"
 else
-     BID=$(( CURRENT_DAY % BDAYS ))
-     PERIOD="daily"
+  [[ $BDAYS -eq 0 ]] && echo "BDAYS is set to 0 in server.config" && exit 6
+  BID=$(( CURRENT_DAY % BDAYS ))
+  PERIOD="daily"
 fi
+
+echo $BID
+exit 0
 
 
 # FUNCTIONS
