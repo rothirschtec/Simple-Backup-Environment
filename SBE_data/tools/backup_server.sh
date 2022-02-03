@@ -292,7 +292,9 @@ notify () {
 
 # backup via rsync
 rsync_backup () {
-  rsync -e "ssh -p ${PORT}" "${roption[@]}" ${USER}@${SERVER}:${SHARE} ${bdir}
+  # The --whole-file parameter deters the remote server to dismember files for network traffic
+  # Maybe this prevents the heavy loads on the server side
+  rsync --whole-file -e "ssh -p ${PORT}" "${roption[@]}" ${USER}@${SERVER}:${SHARE} ${bdir}
 
   # If additional rsync commands exist
   if declare -p rsyncadd >/dev/null 2>&1; then
