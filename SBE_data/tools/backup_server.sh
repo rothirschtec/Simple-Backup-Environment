@@ -27,6 +27,9 @@ BDAYS=1
 BWEEKS=1
 BMONTHS=1
 
+# Rsync WHOLEFILE option. If not in server.config set to 0
+WHOLEFILE=0
+
 
 # Load configuration files
 
@@ -294,7 +297,12 @@ notify () {
 rsync_backup () {
   # The --whole-file parameter deters the remote server to dismember files for network traffic
   # Maybe this prevents the heavy loads on the server side
-  rsync --whole-file -e "ssh -p ${PORT}" "${roption[@]}" ${USER}@${SERVER}:${SHARE} ${bdir}
+  if [[ $WHOLEFILE -eq 1 ]]; then
+    rsync --whole-file -e "ssh -p ${PORT}" "${roption[@]}" ${USER}@${SERVER}:${SHARE} ${bdir}
+  else
+    rsync -e "ssh -p ${PORT}" "${roption[@]}" ${USER}@${SERVER}:${SHARE} ${bdir}
+  fi
+
 
   # If additional rsync commands exist
   if declare -p rsyncadd >/dev/null 2>&1; then
