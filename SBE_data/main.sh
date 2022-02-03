@@ -44,146 +44,152 @@ else
 
 fi
 
-
-# Uncomment to test cron
-#message="Backup b_dirs count: ${#b_dirs[@]}"
-#echo $message; echo -e "Subject: $message\n\nNew message from SBE\nDir: $hdir\nb_invs: ${b_invs[@]}" | $sendmail $mail
-
 # # #
-# Start backups
-for (( x=0; x < ${#b_dirs[@]}; x++ ))
+# Program
+while :
 do
 
-    if [[ $1 == "now" ]]; then
+  # Uncomment to test cron
+  #message="Backup b_dirs count: ${#b_dirs[@]}"
+  #echo $message; echo -e "Subject: $message\n\nNew message from SBE\nDir: $hdir\nb_invs: ${b_invs[@]}" | $sendmail $mail
 
-        dobackup[0]=1
-        dobackup[1]=1
-        dobackup[2]=1
+  # # #
+  # Start backups
+  for (( x=0; x < ${#b_dirs[@]}; x++ ))
+  do
 
-    else
+      if [[ $1 == "now" ]]; then
 
-        dobackup[0]=0	# Triggers backup
-        dobackup[1]=0	# Triggers backup
-        dobackup[2]=0	# Checks if there are minutes hours or nothing
+          dobackup[0]=1
+          dobackup[1]=1
+          dobackup[2]=1
 
-        # Check intervalls, Possible things
-        # 9h 
-        # 15h
-        # 9m 
-        # 15m
-        # 12:13
+      else
 
-	# Hours as single digit number
-        if [[ "${b_invs[$x]}" =~ ^[0-9][hH]$ ]]; then
-            b_invs[x]="$(sed 's/[hH]//g' <<< ${b_invs[$x]})"
-            b_date=$(date +"%H")
-            dobackup[2]=1
+          dobackup[0]=0	# Triggers backup
+          dobackup[1]=0	# Triggers backup
+          dobackup[2]=0	# Checks if there are minutes hours or nothing
 
-	# Hours as number with to digits
-        elif [[ "${b_invs[$x]}" =~ ^[0-9][0-9][hH]$ ]]; then
-            b_invs[x]=$(sed 's/[hH]//g' <<< ${b_invs[$x]})
-            b_date=$(date +"%H")
-            dobackup[2]=1
+          # Check intervalls, Possible things
+          # 9h
+          # 15h
+          # 9m
+          # 15m
+          # 12:13
 
-	# Minutes as single digit number
-        elif [[ "${b_invs[$x]}" =~ ^[0-9][0-9][mM]$ ]]; then
-            b_invs[x]=$(sed 's/[mM]//g' <<< ${b_invs[$x]})
-            b_date=$(date +"%M")
-            dobackup[2]=2
+  	# Hours as single digit number
+          if [[ "${b_invs[$x]}" =~ ^[0-9][hH]$ ]]; then
+              b_invs[x]="$(sed 's/[hH]//g' <<< ${b_invs[$x]})"
+              b_date=$(date +"%H")
+              dobackup[2]=1
 
-	# Minutes as number with to digits
-        elif [[ "${b_invs[$x]}" =~ ^[0-9][mM]$ ]]; then
-            b_invs[x]="$(sed 's/[mM]//g' <<< ${b_invs[$x]})"
-            b_date=$(date +"%M")
-            dobackup[2]=2
+  	# Hours as number with to digits
+          elif [[ "${b_invs[$x]}" =~ ^[0-9][0-9][hH]$ ]]; then
+              b_invs[x]=$(sed 's/[hH]//g' <<< ${b_invs[$x]})
+              b_date=$(date +"%H")
+              dobackup[2]=1
 
-	# Clock
-        elif [[ "${b_invs[$x]}" =~ ^[0-9][0-9]":"[0-9][0-9]$ ]]; then
-            b_date=$(date +"%H:%M")
-            dobackup[2]=3
+  	# Minutes as single digit number
+          elif [[ "${b_invs[$x]}" =~ ^[0-9][0-9][mM]$ ]]; then
+              b_invs[x]=$(sed 's/[mM]//g' <<< ${b_invs[$x]})
+              b_date=$(date +"%M")
+              dobackup[2]=2
 
-        else
-            echo "Unknown configuration: ${b_invs[$x]}"
-            exit 1
-        fi
+  	# Minutes as number with to digits
+          elif [[ "${b_invs[$x]}" =~ ^[0-9][mM]$ ]]; then
+              b_invs[x]="$(sed 's/[mM]//g' <<< ${b_invs[$x]})"
+              b_date=$(date +"%M")
+              dobackup[2]=2
 
-	# Remove leading zero
-        b_date_cleaned=$( sed 's/^0//g'  <<< $b_date)
+  	# Clock
+          elif [[ "${b_invs[$x]}" =~ ^[0-9][0-9]":"[0-9][0-9]$ ]]; then
+              b_date=$(date +"%H:%M")
+              dobackup[2]=3
+
+          else
+              echo "Unknown configuration: ${b_invs[$x]}"
+              exit 1
+          fi
+
+  	# Remove leading zero
+          b_date_cleaned=$( sed 's/^0//g'  <<< $b_date)
 
 
-	# Check modulo on hourly intervalls
-        if [ ${dobackup[2]} -eq 1 ] && (( $b_date_cleaned % ${b_invs[$x]} == 0 )); then
+  	# Check modulo on hourly intervalls
+          if [ ${dobackup[2]} -eq 1 ] && (( $b_date_cleaned % ${b_invs[$x]} == 0 )); then
 
-            if [[ $(date +"%M") == "00" ]]; then
-                dobackup[0]=1
-            fi
+              if [[ $(date +"%M") == "00" ]]; then
+                  dobackup[0]=1
+              fi
 
-	# Check modulo on minutely intervalls
-        elif [ ${dobackup[2]} -eq 2 ] && (( $b_date_cleaned % ${b_invs[$x]} == 0 )); then
-            dobackup[0]=1
+  	# Check modulo on minutely intervalls
+          elif [ ${dobackup[2]} -eq 2 ] && (( $b_date_cleaned % ${b_invs[$x]} == 0 )); then
+              dobackup[0]=1
 
-	# Simple string comparison for time
-        elif [[ "${b_invs[$x]}" =~ "$b_date" ]]; then
-            dobackup[0]=1
+  	# Simple string comparison for time
+          elif [[ "${b_invs[$x]}" =~ "$b_date" ]]; then
+              dobackup[0]=1
 
-        else
-            echo "Not valid ${b_invs[$x]} =~ $b_date"
+          else
+              echo "Not valid ${b_invs[$x]} =~ $b_date"
 
-        fi
+          fi
 
-        # Check days, Possible things
-        # Monday 
-        # Monday,Tuesday
-        # Mo
-        # Mo,We,Fr
-        # 22
+          # Check days, Possible things
+          # Monday
+          # Monday,Tuesday
+          # Mo
+          # Mo,We,Fr
+          # 22
 
-	# If day is represented as 2 digit number
-        if [[ "${b_dats[$x]}" =~ ^[0-9][0-9]$ ]]; then
-            b_dat=$(date +"%m")
-        elif [[ "${b_dats[$x]}" =~ ^[0-9]$ ]]; then
-            b_dats[x]="0${b_dats[$x]}"
-            b_dat=$(date +"%m")
-        elif [[ "${b_dats[$x]}" =~ ^[A-Z][a-z][a-z][a-z][a-z]* ]]; then
-            b_dat=$(date +"%A")
-        elif [[ "${b_dats[$x]}" =~ ^[A-Z][a-z][a-z]$ ]]; then
-            b_dat=$(date +"%a")
-        elif [[ "${b_dats[$x]}" =~ ^[A-Z][a-z][a-z]","* ]]; then
-            b_dat=$(date +"%a")
-        else
-            echo "Unknown configuration: ${b_dats[$x]}"
-            exit 1
-        fi
+  	# If day is represented as 2 digit number
+          if [[ "${b_dats[$x]}" =~ ^[0-9][0-9]$ ]]; then
+              b_dat=$(date +"%m")
+          elif [[ "${b_dats[$x]}" =~ ^[0-9]$ ]]; then
+              b_dats[x]="0${b_dats[$x]}"
+              b_dat=$(date +"%m")
+          elif [[ "${b_dats[$x]}" =~ ^[A-Z][a-z][a-z][a-z][a-z]* ]]; then
+              b_dat=$(date +"%A")
+          elif [[ "${b_dats[$x]}" =~ ^[A-Z][a-z][a-z]$ ]]; then
+              b_dat=$(date +"%a")
+          elif [[ "${b_dats[$x]}" =~ ^[A-Z][a-z][a-z]","* ]]; then
+              b_dat=$(date +"%a")
+          else
+              echo "Unknown configuration: ${b_dats[$x]}"
+              exit 1
+          fi
 
-        if [[ "${b_dats[$x]}" =~ "$b_dat" ]]; then
-            dobackup[1]=1
-        else
-            echo "Not valid ${b_dats[$x]} =~ $b_dat"
-        fi
+          if [[ "${b_dats[$x]}" =~ "$b_dat" ]]; then
+              dobackup[1]=1
+          else
+              echo "Not valid ${b_dats[$x]} =~ $b_dat"
+          fi
 
-    fi
+      fi
 
-    if [ ${dobackup[0]} -eq 1 ] && [ ${dobackup[1]} -eq 1 ]; then
+      if [ ${dobackup[0]} -eq 1 ] && [ ${dobackup[1]} -eq 1 ]; then
 
-        
-        if [ -f ${hdir}${b_dirs[$x]}/backup_server.sh ]; then
-    
-            bash "${hdir}${b_dirs[$x]}/backup_server.sh" "--${b_type[$x]}" &
-            message="Backup for ${b_dirs[$x]} under way..."
-	    #echo $message; echo -e "Subject: $message\n\nNew message from SBE" | $sendmail $mail
 
-        else
-        
-            message="Backup directory (${b_dirs[$x]}) doesn't exist"
-	    echo $message; echo -e "Subject: $message\n\nNew message from SBE" | $sendmail $mail
+          if [ -f ${hdir}${b_dirs[$x]}/backup_server.sh ]; then
 
-        fi
+              bash "${hdir}${b_dirs[$x]}/backup_server.sh" "--${b_type[$x]}" &
+              message="Backup for ${b_dirs[$x]} under way..."
+  	    #echo $message; echo -e "Subject: $message\n\nNew message from SBE" | $sendmail $mail
 
-    #else                                                                          
-    #	message="Backup cron, Backup not needed"
-    #	echo $message; echo -e "Subject: $message" | $sendmail $mail
+          else
 
-    fi
+              message="Backup directory (${b_dirs[$x]}) doesn't exist"
+  	    echo $message; echo -e "Subject: $message\n\nNew message from SBE" | $sendmail $mail
+
+          fi
+
+      #else
+      #	message="Backup cron, Backup not needed"
+      #	echo $message; echo -e "Subject: $message" | $sendmail $mail
+
+      fi
+  done
+
 done
 
 exit 0
