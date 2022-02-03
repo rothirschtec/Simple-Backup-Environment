@@ -83,9 +83,6 @@ else
   PERIOD="daily"
 fi
 
-echo $BID
-exit 0
-
 
 # FUNCTIONS
 
