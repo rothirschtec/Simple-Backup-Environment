@@ -22,16 +22,9 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
         openssh-server  \
         pwgen           \
         cryptsetup      \
-        #cron            \
         sendmail        \
     && rm -rf /var/lib/apt/lists/*
 
-
-# Configure cronjob
-#RUN echo '# SBE backup each minute' >> /var/spool/cron/crontabs/root
-#RUN echo '*/1 * * * * bash /opt/SBE/SBE_data/main.sh' >> /var/spool/cron/crontabs/root
-#RUN echo '# SBE checker' >> /var/spool/cron/crontabs/root
-#RUN echo '0 6 * * * bash /opt/SBE/SBE_data/tools/checker.sh' >> /var/spool/cron/crontabs/root
 
 ARG workdir=/opt/SBE/SBE_data
 ARG reportdir=/opt/SBE/SBE_reports
@@ -40,6 +33,3 @@ RUN mkdir -p $workdir \
 WORKDIR $workdir
 
 CMD ["/opt/SBE/SBE_data/main.sh"]
-#EXPOSE 22
-#RUN service ssh start
-#CMD ["/usr/sbin/sshd","-D"]
