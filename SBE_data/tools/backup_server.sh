@@ -128,7 +128,9 @@ create_backup_directory () {
     done < <(find ${bmount}${PERIOD}/ -maxdepth 1 -name "${BID}_*" -print0)
   fi
 
+
   if [ $n -gt 1 ]; then
+    echo "There are multiple backups with same BID. Related name $sname"
     echo -e "Subject: There are multiple backups with same BID. Related name $sname on $HOSTNAME\n\n" | $sendmail $mail
     exit 4
   elif [ $n -eq 1 ]; then
