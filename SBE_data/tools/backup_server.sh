@@ -72,7 +72,7 @@ elif [[ $@ =~ "--monthly" ]]; then
      BID=$(( CURRENT_MONTH % BMONTHS ))
      PERIOD="monthly"
 elif [[ $@ =~ "--archive" ]]; then
-     BID=$(( CURRENT_WEEK % BWEEKS ))
+     BID=0
      PERIOD="archive"
      TYPE="tar"
 else
@@ -130,8 +130,8 @@ create_backup_directory () {
 
 
   if [ $n -gt 1 ]; then
-    echo "There are multiple backups with same BID. Related name $sname"
-    echo -e "Subject: There are multiple backups with same BID. Related name $sname on $HOSTNAME\n\n" | $sendmail $mail
+    echo "There are multiple backups with same BID (Backup ID). Related name $sname"
+    echo -e "Subject: There are multiple backups with same BID (Backup ID). Related name $sname on $HOSTNAME\n\n" | $sendmail $mail
     exit 4
   elif [ $n -eq 1 ]; then
     olddir=$(echo ${bmount}${PERIOD}/${BID}_*)
