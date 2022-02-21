@@ -131,7 +131,7 @@ create_backup_directory () {
   if [ -d ${bmount}${PERIOD} ]; then
     while read -r -d ''; do
       ((n++))
-    done < <(find ${bmount}${PERIOD}/ -maxdepth 1 -name "${BID}_*" -print0)
+    done < <(find ${bmount}${PERIOD}/ -maxdepth 1 -name $"${BID}_*" -print0)
   fi
 
 
@@ -151,7 +151,7 @@ create_backup_directory () {
   if [ -d ${bmount}${PERIOD} ]; then
     while read -r -d ''; do
       ((n++))
-    done < <(find ${bmount}${PERIOD}/ -maxdepth 1 -name "${BID}_*" -print0)
+    done < <(find ${bmount}${PERIOD}/ -maxdepth 1 -name $"${BID}_*" -print0)
   fi
 
   if [ $n -gt 1 ]; then
