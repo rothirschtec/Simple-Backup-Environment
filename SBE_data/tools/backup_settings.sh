@@ -16,12 +16,12 @@ mkdir -p $sbdir
 
 for x in ${hdir}*; do
 
-    if [ -d $x ] && [[ ! $x =~ "tools" ]]; then
-        destination="${x}/"
-        server=${x##*/}
-        echo "Backup: ${server}"
-        server="${server}/"
-        rsync -a ${destination}server.config ${sbdir}${server}
-    fi
+  if [ -d $x ] && [[ ! $x =~ "tools" ]]; then
+    destination="${x}/"
+    server=${x##*/}
+    echo "Backup: ${server}"
+    server="${server}/"
+    rsync -a ${destination}server.config ${sbdir}${server}
+  fi
 
 done

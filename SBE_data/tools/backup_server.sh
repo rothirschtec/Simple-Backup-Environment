@@ -146,6 +146,20 @@ create_backup_directory () {
     mkdir -p ${bdir}
   fi
 
+  # Recheck if there are more then one directories with same BID
+  n=0
+  if [ -d ${bmount}${PERIOD} ]; then
+    while read -r -d ''; do
+      ((n++))
+    done < <(find ${bmount}${PERIOD}/ -maxdepth 1 -name "${BID}_*" -print0)
+  fi
+
+  if [ $n -gt 1 ]; then
+    echo "There are multiple backups with same BID (Backup ID). Related name $sname"
+    echo -e "Subject: There are multiple backups with same BID (Backup ID). Related name $sname on $HOSTNAME\n\n" | $sendmail $mail
+    exit 4
+  fi
+
 }
 
 # Check if there already exists a backup process for the given server and PERIOD
