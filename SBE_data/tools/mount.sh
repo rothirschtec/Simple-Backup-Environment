@@ -29,8 +29,6 @@ get_project_name () {
 
 # MAIN
 
-
-
 if [[ $@ =~ "--umount" ]]; then
 
   get_project_name
@@ -42,8 +40,10 @@ elif [[ $@ =~ "--mount" ]]; then
   mount_backup_directory
 
 else
+
   echo "Please use flag --mount or --umount"
   exit 1
+  
 fi
 
 

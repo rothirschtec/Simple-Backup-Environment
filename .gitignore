@@ -24,3 +24,5 @@
 #!*/a/b/c/*
 !SBE_data/tools
 !SBE_data/tools/*
+!SBE_data/tools/lib
+!SBE_data/tools/lib/*
