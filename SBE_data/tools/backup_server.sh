@@ -7,6 +7,7 @@
 
 # Directories
 cd $(dirname $0)
+source ../tools/lib/*
 sdir="$PWD"
 sname=${sdir##*/}
 sdir="${sdir}/"
@@ -95,33 +96,6 @@ remote_server_up () {
 	ssh ${USER}@$SERVER -p $PORT "echo 2>&1" && return 0 || return 1
 }
 
-# Decrypt backup
-decrypt_backup_directory () {
-  passphrase=$(cat ${sdir}passphrase)
-  echo -n "$passphrase" | cryptsetup luksOpen --type luks2 ${sdir}backups ${sname}.mounted
-}
-
-# Mount decrypted backup directory
-mount_backup_directory () {
-  if ! mount | grep "${sdir}.mounted" > /dev/null; then
-    if [[ $ENCRYPTED -eq 1 ]]; then
-      decrypt_backup_directory
-      mount /dev/mapper/${sname}.mounted ${sdir}.mounted
-    else
-      mount ${sdir}backups ${sdir}.mounted
-    fi
-  fi
-  bmount="${sdir}.mounted/"
-}
-
-# Simply unmount backup image
-umount_backup_directory () {
-  umount ${sdir}.mounted
-  if [[ $ENCRYPTED -eq 1 ]]; then
-    cryptsetup luksClose ${sname}.mounted
-  fi
-}
-
 # Create backup directory
 create_backup_directory () {
 
@@ -144,20 +118,6 @@ create_backup_directory () {
     mv $olddir $bdir
   else
     mkdir -p ${bdir}
-  fi
-
-  # Recheck if there are more then one directories with same BID
-  n=0
-  if [ -d ${bmount}${PERIOD} ]; then
-    while read -r -d ''; do
-      ((n++))
-    done < <(find ${bmount}${PERIOD}/ -maxdepth 1 -name $"${BID}_*" -print0)
-  fi
-
-  if [ $n -gt 1 ]; then
-    echo "There are multiple backups with same BID (Backup ID). Related name $sname"
-    echo -e "Subject: There are multiple backups with same BID (Backup ID). Related name $sname on $HOSTNAME\n\n" | $sendmail $mail
-    exit 4
   fi
 
 }

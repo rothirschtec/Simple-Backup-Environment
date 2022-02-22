@@ -105,11 +105,6 @@ mount_backup_directory () {
   [[ $encrypted -eq 1 ]] && mount /dev/mapper/${sname}.mounted ${bdir}.mounted ||  mount ${bdir}backups ${bdir}.mounted
 }
 
-# Simply unmount backup image
-umount_backup_directory () {
-  umount ${bdir}.mounted
-}
-
 fill_backup_directory () {
 
   rsync -a ${SBE_dir}tools/server.config    ${bdir}
