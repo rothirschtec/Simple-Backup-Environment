@@ -99,28 +99,36 @@ remote_server_up () {
 	ssh ${USER}@$SERVER -p $PORT "echo 2>&1" && return 0 || return 1
 }
 
-# Create backup directory
-create_backup_directory () {
-
-  bdir="${bmount}${PERIOD}/${BID}_$(date +"%Y-%m-%d_%H%M%S")"
-
-  n=0
+find_duplicates () {
+  local n=0
   if [ -d ${bmount}${PERIOD} ]; then
     while read -r -d ''; do
       ((n++))
     done < <(find ${bmount}${PERIOD}/ -maxdepth 1 -name $"${BID}_*" -print0)
   fi
+  echo $n
+}
 
+# Create backup directory
+create_backup_directory () {
+
+  bdir="${bmount}${PERIOD}/${BID}_$(date +"%Y-%m-%d_%H%M%S")"
+
+  n=$(find_duplicates)
+
+  if [ $n -eq 1 ]; then
+    olddir=$(echo ${bmount}${PERIOD}/${BID}_*)
+    mv $olddir $bdir
+  elif [ $n -eq 0 ]; then
+    mkdir -p ${bdir}
+  fi
+
+  n=$(find_duplicates)
 
   if [ $n -gt 1 ]; then
     echo "There are multiple backups with same BID (Backup ID). Related name $sname"
     echo -e "Subject: There are multiple backups with same BID (Backup ID). Related name $sname on $HOSTNAME\n\n" | $sendmail $mail
     exit 4
-  elif [ $n -eq 1 ]; then
-    olddir=$(echo ${bmount}${PERIOD}/${BID}_*)
-    mv $olddir $bdir
-  else
-    mkdir -p ${bdir}
   fi
 
 }
