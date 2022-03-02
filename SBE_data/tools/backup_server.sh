@@ -2,6 +2,9 @@
 #
 # You can copy your ssh key to the remote server if you want
 # backup_server.sh --sshCopy
+# Dependencies:
+# - sendmail
+# - cryptsetup
 
 # Set variables
 

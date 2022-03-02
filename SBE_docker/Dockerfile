@@ -22,7 +22,9 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
         openssh-server  \
         pwgen           \
         cryptsetup      \
-        sendmail        \
+        mailutils       \
+        msmtp           \
+        msmtp-mta       \
     && rm -rf /var/lib/apt/lists/*
 
 

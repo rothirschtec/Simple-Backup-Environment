@@ -12,6 +12,7 @@ services:
       - ./:/opt/SBE
       - ${reportsdir}:/tmp/SBE_reports
       - ${sbdir}:/tmp/SBE_settings
+      - ./msmtprc:/etc/msmtprc
     networks:
       - debian-net
 
