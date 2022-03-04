@@ -337,9 +337,9 @@ elif [ $BACKUP -eq 1 ]; then
 
   mount_backup_directory || exit 4 && [[ "$@" =~ "--log" ]] && echo "Backup directory mounted"
 
-  create_backup_directory || exit 5 && [[ "$@" =~ "--log" ]] && echo "Backup directory created"
-
   process_in_queue || exit 2 && [[ "$@" =~ "--log" ]] && echo "Backup was not already in queue"
+
+  create_backup_directory || exit 5 && [[ "$@" =~ "--log" ]] && echo "Backup directory created"
 
   manage_queue && [[ "$@" =~ "--log" ]] && echo "Managed queue"
 
