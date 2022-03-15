@@ -339,12 +339,11 @@ elif [ $BACKUP -eq 1 ]; then
 
   process_in_queue || exit 2 && [[ "$@" =~ "--log" ]] && echo "Backup was not already in queue"
 
-  create_backup_directory || exit 5 && [[ "$@" =~ "--log" ]] && echo "Backup directory created"
-
   manage_queue && [[ "$@" =~ "--log" ]] && echo "Managed queue"
 
   write_to_queue && [[ "$@" =~ "--log" ]] && echo "Added backup to queue"
 
+  create_backup_directory || exit 5 && [[ "$@" =~ "--log" ]] && echo "Backup directory created"
 
   # Backup process
   (
