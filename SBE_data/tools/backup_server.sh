@@ -80,9 +80,8 @@ elif [[ $@ =~ "--monthly" ]]; then
   [[ $BMONTHS -eq 0 ]] && echo "BMONTHS is set to 0 in server.config" && exit 6
   BID=$(( CURRENT_MONTH % BMONTHS ))
   PERIOD="monthly"
-elif [[ $@ =~ "--archive" ]]; then
-  BID=$(( CURRENT_WEEK % BWEEKS ))
-  PERIOD="archive"
+elif [[ $@ =~ "--latest" ]]; then
+  PERIOD="latest"
   TYPE="tar"
 else
   [[ $BDAYS -eq 0 ]] && echo "BDAYS is set to 0 in server.config" && exit 6
@@ -316,9 +315,8 @@ share_backup () {
 
 # Create
 tar_backup () {
-   echo "Tar Archive Backup"
-   mkdir -p ${sdir}.mounted/archives/
-   ssh -p ${PORT} ${USER}@${SERVER} tar czf - ${SHARE} > ${sdir}.mounted/archives/$(date +"%y-%m-%d_%H:%M").tar.gz
+   echo "Tar Latest Backup"
+   ssh -p ${PORT} ${USER}@${SERVER} tar czf - ${SHARE} > ${sdir}.mounted/latest.tar.gz
 }
 
 # MAIN
