@@ -83,6 +83,14 @@ elif [[ $@ =~ "--monthly" ]]; then
 elif [[ $@ =~ "--latest" ]]; then
   PERIOD="latest"
   TYPE="tar"
+  i=0
+  for excludes in ${roption[@]}
+  do
+    if [[ $excludes =~ "--exclude" ]]; then
+      tar_exclude[$i]=$excludes
+      (( i++ ))
+    fi
+  done
 else
   [[ $BDAYS -eq 0 ]] && echo "BDAYS is set to 0 in server.config" && exit 6
   BID=$(( CURRENT_DAY % BDAYS ))
@@ -316,7 +324,7 @@ share_backup () {
 # Create
 tar_backup () {
    echo "Tar latest Backup"
-   ssh -p ${PORT} ${USER}@${SERVER} tar czf - ${SHARE} > ${sdir}.mounted/latest.tar.gz
+   ssh -p ${PORT} ${USER}@${SERVER} tar czf ${tar_exclude[@]} - ${SHARE} > ${sdir}.mounted/latest.tar.gz
 }
 
 # MAIN
@@ -341,13 +349,16 @@ elif [ $BACKUP -eq 1 ]; then
 
   write_to_queue && [[ "$@" =~ "--log" ]] && echo "Added backup to queue"
 
-  create_backup_directory || exit 5 && [[ "$@" =~ "--log" ]] && echo "Backup directory created"
 
   # Backup process
   (
     echo "Starting Backup: $(date +"%y-%m-%d %H:%M")"
     echo "Backup Directory: $bdir"
     echo ""
+
+    if [[ $TYPE != "tar" ]]; then
+      create_backup_directory || exit 5 && [[ "$@" =~ "--log" ]] && echo "Backup directory created"
+    fi
 
     tc=0
     [[ "$@" =~ "--log" ]] && echo "Starting backup type: $TYPE"
