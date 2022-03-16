@@ -290,9 +290,9 @@ rsync_backup () {
   # The --whole-file parameter deters the remote server to dismember files for network traffic
   # Maybe this prevents the heavy loads on the server side
   if [[ $WHOLEFILE -eq 1 ]]; then
-    rsync --whole-file -aAXz "ssh -p ${PORT}" "${roption[@]}" ${USER}@${SERVER}:${SHARE} ${bdir}
+    rsync --whole-file -e "ssh -p ${PORT}" "${roption[@]}" ${USER}@${SERVER}:${SHARE} ${bdir}
   else
-    rsync -aAXz "ssh -p ${PORT}" "${roption[@]}" ${USER}@${SERVER}:${SHARE} ${bdir}
+    rsync -e "ssh -p ${PORT}" "${roption[@]}" ${USER}@${SERVER}:${SHARE} ${bdir}
   fi
 
 
