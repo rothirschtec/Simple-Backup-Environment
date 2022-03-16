@@ -82,15 +82,6 @@ elif [[ $@ =~ "--monthly" ]]; then
   PERIOD="monthly"
 elif [[ $@ =~ "--latest" ]]; then
   PERIOD="latest"
-  TYPE="tar"
-  i=0
-  for excludes in ${roption[@]}
-  do
-    if [[ $excludes =~ "--exclude" ]]; then
-      tar_exclude[$i]=$excludes
-      (( i++ ))
-    fi
-  done
 else
   [[ $BDAYS -eq 0 ]] && echo "BDAYS is set to 0 in server.config" && exit 6
   BID=$(( CURRENT_DAY % BDAYS ))
@@ -119,23 +110,32 @@ find_duplicates () {
 # Create backup directory
 create_backup_directory () {
 
-  bdir="${bmount}${PERIOD}/${BID}_$(date +"%Y-%m-%d_%H%M%S")"
+  if [[ $PERIOD != "latest" ]]; then
 
-  n=$(find_duplicates)
+    bdir="${bmount}${PERIOD}/${BID}_$(date +"%Y-%m-%d_%H%M%S")"
 
-  if [ $n -eq 1 ]; then
-    olddir=$(echo ${bmount}${PERIOD}/${BID}_*)
-    mv $olddir $bdir
-  elif [ $n -eq 0 ]; then
+    n=$(find_duplicates)
+
+    if [ $n -eq 1 ]; then
+      olddir=$(echo ${bmount}${PERIOD}/${BID}_*)
+      mv $olddir $bdir
+    elif [ $n -eq 0 ]; then
+      mkdir -p ${bdir}
+    fi
+
+    n=$(find_duplicates)
+
+    if [ $n -gt 1 ]; then
+      echo "There are multiple backups with same BID (Backup ID). Related name $sname"
+      echo -e "Subject: There are multiple backups with same BID (Backup ID). Related name $sname on $HOSTNAME\n\n" | $sendmail $mail
+      exit 4
+    fi
+
+  else
+
+    bdir="${bmount}${PERIOD}"
     mkdir -p ${bdir}
-  fi
 
-  n=$(find_duplicates)
-
-  if [ $n -gt 1 ]; then
-    echo "There are multiple backups with same BID (Backup ID). Related name $sname"
-    echo -e "Subject: There are multiple backups with same BID (Backup ID). Related name $sname on $HOSTNAME\n\n" | $sendmail $mail
-    exit 4
   fi
 
 }
@@ -290,9 +290,9 @@ rsync_backup () {
   # The --whole-file parameter deters the remote server to dismember files for network traffic
   # Maybe this prevents the heavy loads on the server side
   if [[ $WHOLEFILE -eq 1 ]]; then
-    rsync --whole-file -e "ssh -p ${PORT}" "${roption[@]}" ${USER}@${SERVER}:${SHARE} ${bdir}
+    rsync --whole-file -aAXz "ssh -p ${PORT}" "${roption[@]}" ${USER}@${SERVER}:${SHARE} ${bdir}
   else
-    rsync -e "ssh -p ${PORT}" "${roption[@]}" ${USER}@${SERVER}:${SHARE} ${bdir}
+    rsync -aAXz "ssh -p ${PORT}" "${roption[@]}" ${USER}@${SERVER}:${SHARE} ${bdir}
   fi
 
 
@@ -319,12 +319,6 @@ share_backup () {
         echo "Successfully umounted device"
       fi
   fi
-}
-
-# Create
-tar_backup () {
-   echo "Tar latest Backup"
-   ssh -p ${PORT} ${USER}@${SERVER} tar czf ${tar_exclude[@]} - ${SHARE} > ${sdir}.mounted/latest.tar.gz
 }
 
 # MAIN
@@ -356,15 +350,12 @@ elif [ $BACKUP -eq 1 ]; then
     echo "Backup Directory: $bdir"
     echo ""
 
-    if [[ $TYPE != "tar" ]]; then
-      create_backup_directory || exit 5 && [[ "$@" =~ "--log" ]] && echo "Backup directory created"
-    fi
+    create_backup_directory || exit 5 && [[ "$@" =~ "--log" ]] && echo "Backup directory created"
 
     tc=0
     [[ "$@" =~ "--log" ]] && echo "Starting backup type: $TYPE"
     [[ $TYPE == "rsync" ]] && rsync_backup; tc=1
     [[ $TYPE == "share" ]] && share_backup; tc=1
-    [[ $TYPE == "tar" ]] && tar_backup; tc=1
     [ $tc -eq 1 ] || exit 3
 
     echo "Successfull backup: $(date +"%y-%m-%d %H:%M")"
