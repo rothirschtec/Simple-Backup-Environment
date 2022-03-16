@@ -315,7 +315,7 @@ share_backup () {
 
 # Create
 tar_backup () {
-   echo "Tar Latest Backup"
+   echo "Tar latest Backup"
    ssh -p ${PORT} ${USER}@${SERVER} tar czf - ${SHARE} > ${sdir}.mounted/latest.tar.gz
 }
 
