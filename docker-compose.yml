@@ -13,7 +13,6 @@ services:
       - ${reportsdir}:/tmp/SBE_reports
       - ${sbdir}:/tmp/SBE_settings
       - ./msmtprc:/etc/msmtprc
-      - /etc/timezone:/etc/timezone:ro
       - /etc/localtime:/etc/localtime:ro
     networks:
       - debian-net
