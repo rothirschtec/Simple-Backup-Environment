@@ -341,15 +341,16 @@ elif [ $BACKUP -eq 1 ]; then
 
   write_to_queue && [[ "$@" =~ "--log" ]] && echo "Added backup to queue"
 
+  mount_backup_directory || exit 4 && [[ "$@" =~ "--log" ]] && echo "Backup directory mounted"
+
+  create_backup_directory || exit 5 && [[ "$@" =~ "--log" ]] && echo "Backup directory created"
+
   # Backup process
   (
+
     echo "Starting Backup: $(date +"%y-%m-%d %H:%M")"
     echo "Backup Directory: $bdir"
     echo ""
-
-    mount_backup_directory || exit 4 && [[ "$@" =~ "--log" ]] && echo "Backup directory mounted"
-
-    create_backup_directory || exit 5 && [[ "$@" =~ "--log" ]] && echo "Backup directory created"
 
     tc=0
     [[ "$@" =~ "--log" ]] && echo "Starting backup type: $TYPE"
