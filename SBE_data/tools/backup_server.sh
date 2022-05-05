@@ -336,13 +336,13 @@ elif [ $BACKUP -eq 1 ]; then
 
   [[ "$@" =~ "--log" ]] && echo "Backup process started"
 
-  remote_server_up || exit 1 && [[ "$@" =~ "--log" ]] && echo "Server is up"
-
   process_in_queue || exit 2 && [[ "$@" =~ "--log" ]] && echo "Backup was not already in queue"
 
   manage_queue && [[ "$@" =~ "--log" ]] && echo "Managed queue"
 
   write_to_queue && [[ "$@" =~ "--log" ]] && echo "Added backup to queue"
+
+  remote_server_up || exit 1 && [[ "$@" =~ "--log" ]] && echo "Server is up"
 
   mount_backup_directory || exit 4 && [[ "$@" =~ "--log" ]] && echo "Backup directory mounted"
 
