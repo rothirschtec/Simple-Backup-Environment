@@ -1,0 +1,15 @@
+[Unit]
+Description=Simple Backup Environment
+
+Wants=network.target
+After=syslog.target network-online.target
+
+[Service]
+Type=simple
+ExecStart=/media/backup-raid5-network/RT-Blog-SBE/SBE_data/main.sh
+Restart=on-failure
+RestartSec=10
+KillMode=process
+
+[Install]
+WantedBy=multi-user.target
