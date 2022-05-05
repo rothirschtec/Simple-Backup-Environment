@@ -11,7 +11,8 @@ mdir="$PWD/"
 if [ -f ${mdir}.env ]; then
     source ${mdir}.env
 else
-    source ${mdir}env.example
+      echo "You have to configure .env first. Copy from env.example to .env and configure it."
+      exit 1
 fi
 source /etc/os-release
 echo $NAME

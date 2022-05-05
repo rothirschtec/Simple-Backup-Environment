@@ -47,7 +47,8 @@ reports=/tmp/
 if [ -f ${mdir}.env ]; then
     source ${mdir}.env
 else
-    source ${mdir}env.example
+    echo "You have to configure .env first. Copy from env.example to .env and configure it."
+    exit 1
 fi
 if [ -f ${sdir}server.config ]; then
     source ${sdir}server.config
