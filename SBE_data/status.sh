@@ -3,13 +3,15 @@
 
 cd $(dirname $0)
 hdir="$PWD/"
+cd ../
+mdir="$PWD/"
 
 # # #
 # Parse config
-if [ -f ${hdir}config ]; then
-    source ${hdir}config
+if [ -f ${mdir}.env ]; then
+    source ${mdir}.env
 else
-    source ${hdir}tools/config_example
+    source ${mdir}env.example
 fi
 source /etc/os-release
 echo $NAME

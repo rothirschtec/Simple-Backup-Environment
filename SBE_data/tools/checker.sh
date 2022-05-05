@@ -4,17 +4,17 @@
 # in this file you can find each backup execution defined by intervalls
 
 # Declare variables
-cd $(dirname $0); tools="$PWD/"; cd ..; hdir="$PWD/";
+cd $(dirname $0); tools="$PWD/"; cd ..; hdir="$PWD/"; cd ..; mdir="$PWD/";
 
 # Clean template files
 rm -f ${hdir}.backups-executed-yesterday; touch ${hdir}.backups-executed-yesterday
 rm -f ${hdir}.backup-operations; touch ${hdir}.backup-operations;
 
 # Parse config
-if [ -f ${hdir}config ]; then
-    source ${hdir}config
+if [ -f ${mdir}.env ]; then
+    source ${mdir}.env
 else
-    source ${hdir}tools/config_example
+    source ${mdir}env.example
 fi
 
 # Check done file

@@ -17,6 +17,9 @@ sdir="${sdir}/"
 
 cd ..
 rdir="$PWD/"
+cd ../
+mdir="$PWD/"
+
 error=false
 
 # Backup Directory
@@ -41,10 +44,10 @@ WHOLEFILE=0
 mail=root
 reports=/tmp/
 
-if [ -f ${rdir}config ]; then
-    source ${rdir}config
+if [ -f ${mdir}.env ]; then
+    source ${mdir}.env
 else
-    source ${rdir}tools/config_example
+    source ${mdir}env.example
 fi
 if [ -f ${sdir}server.config ]; then
     source ${sdir}server.config

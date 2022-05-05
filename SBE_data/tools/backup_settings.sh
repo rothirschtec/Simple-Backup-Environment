@@ -4,8 +4,10 @@ cd $(dirname $0)
 sdir="$PWD/"
 cd ..
 hdir="$PWD/"
+cd ..
+mdir="$PWD/"
 
-source ${hdir}config
+source ${mdir}.env
 
 echo; echo $sbdir
 read -p "The content of this directory will be erased (o): " a

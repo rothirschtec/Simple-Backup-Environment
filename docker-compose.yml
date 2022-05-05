@@ -10,8 +10,8 @@ services:
     volumes:
       - ${sshdir}:/root/.ssh
       - ./:/opt/SBE
-      - ${reportsdir}:/tmp/SBE_reports
-      - ${sbdir}:/tmp/SBE_settings
+      - ${reports}:${reports}
+      - ${sbdir}:${sbdir}
       - ./msmtprc:/etc/msmtprc
       - /etc/localtime:/etc/localtime:ro
     networks:
@@ -21,4 +21,4 @@ networks:
   debian-net:
     ipam:
       config:
-        - subnet: 172.23.238.0/24
+        - subnet: 172.23.${SUBNET}.0/24
