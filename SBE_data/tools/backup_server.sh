@@ -213,7 +213,7 @@ manage_queue () {
       # Check if there's already a backup process for the remote server in queue-run. If so, use next entry in queue
       if ! cat ${reports}SBE-queue-run | grep ${sname} &> /dev/null; then
 
-        # End loop if queue exists and queue run count is less then stmax
+        # End loop if queue pid exists and queue run count is less then stmax
         if [[ $queue =~ "$$;" ]]; then
           st=$(cat ${reports}SBE-queue-run | wc -l)
         fi
@@ -227,6 +227,7 @@ manage_queue () {
 
       else
 
+        # Increment queue id
         if [ $(cat ${reports}SBE-queue | wc -l) -gt 1 ]; then
           (( sti++ ))
         fi
@@ -338,6 +339,8 @@ elif [ $BACKUP -eq 1 ]; then
     [[ $TYPE == "share" ]] && share_backup; tc=1
     [ $tc -eq 1 ] || exit 3
 
+    umount_backup_directory && [[ "$@" =~ "--log" ]] && echo "Backup directory unmounted"
+
     echo "Successfull backup: $(date +"%y-%m-%d %H:%M")"
     sed -i "/^$cID;.*$/d" ${reports}SBE-queue-run
 
@@ -345,7 +348,6 @@ elif [ $BACKUP -eq 1 ]; then
 
   ) >> ${sdir}bac.log | tee ${rdir}all.log 2> ${sdir}err.log | tee ${rdir}all.log
 
-  umount_backup_directory && [[ "$@" =~ "--log" ]] && echo "Backup directory unmounted"
 
   [[ "$@" =~ "--log" ]] && echo "Backup done"
 
