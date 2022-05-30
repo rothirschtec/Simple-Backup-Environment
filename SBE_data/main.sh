@@ -2,6 +2,8 @@
 
 cd $(dirname $0)
 hdir="$PWD/"
+cd ..
+mdir="$PWD/"
 
 [[ "$@" =~ "--logs" ]] && logs=1 ||  logs=0
 
@@ -25,10 +27,11 @@ do
 
   # # #
   # Parse config
-  if [ -f ${hdir}config ]; then
-      source ${hdir}config
+  if [ -f ${mdir}.env ]; then
+      source ${mdir}.env
   else
-      source ${hdir}tools/config_example
+      echo "You have to configure .env first. Copy from env.example to .env and configure it."
+      exit 1
   fi
 
 

@@ -4,17 +4,18 @@
 # in this file you can find each backup execution defined by intervalls
 
 # Declare variables
-cd $(dirname $0); tools="$PWD/"; cd ..; hdir="$PWD/";
+cd $(dirname $0); tools="$PWD/"; cd ..; hdir="$PWD/"; cd ..; mdir="$PWD/";
 
 # Clean template files
 rm -f ${hdir}.backups-executed-yesterday; touch ${hdir}.backups-executed-yesterday
 rm -f ${hdir}.backup-operations; touch ${hdir}.backup-operations;
 
 # Parse config
-if [ -f ${hdir}config ]; then
-    source ${hdir}config
+if [ -f ${mdir}.env ]; then
+    source ${mdir}.env
 else
-    source ${hdir}tools/config_example
+    echo "You have to configure .env first. Copy from env.example to .env and configure it."
+    exit 1
 fi
 
 # Check done file
@@ -98,8 +99,8 @@ do
 			echo "  <type>${b_type[$x]}</type>"                         >> ${hdir}.backup-operations
 			echo "</server>"                                            >> ${hdir}.backup-operations
 		    fi
-           
-            done 
+
+            done
         done
 
     # Rest
@@ -113,7 +114,7 @@ do
         echo "</server>"                                                    >> ${hdir}.backup-operations
 
     fi
-                        
+
 done
 
 
@@ -137,11 +138,11 @@ w_day_num=`date --date="@${yesterday}" +"%-d"`      # Day of month as number
 w_year=`date --date="@${yesterday}" +"%Y"`          # Year
 w_month=`date --date="@${yesterday}" +"%b"`         # Month as 3 sign short name
 
-rm -f ${hdir}.backups-executed-yesterday 
+rm -f ${hdir}.backups-executed-yesterday
 # Loop through servernames from .backup-operations and write all executed lines from yesterday to .backups-executed-yesterday file
 cat ${reports}SBE-done | awk -F";" '{print $3, $2}' | grep $w_month | grep $w_year | grep $w_day_num | grep $w_day |  while read -r logline ; do
 
-    echo $logline | awk -F" " '{print $1, $2, $3, $4, $7}' >> ${hdir}.backups-executed-yesterday 
+    echo $logline | awk -F" " '{print $1, $2, $3, $4, $7}' >> ${hdir}.backups-executed-yesterday
 
 done
 
@@ -149,7 +150,7 @@ if [ -f ${hdir}.backups-executed-yesterday ]; then
 
     # Count backups and display
     occurrence=$(cat ${hdir}.backups-executed-yesterday | wc -l)
-    dc1=$(grep -o -i $w_day <<< ${b_dats[@]} | wc -l) 
+    dc1=$(grep -o -i $w_day <<< ${b_dats[@]} | wc -l)
     dc2=$(grep -o -i $w_day_num <<< ${b_dats[@]} | wc -l)
     daycount=$(( ${dc1} + ${dc2} ))
     echo " $daycount of them are meant to be executed yesterday"
