@@ -13,8 +13,8 @@ We'd recommend using docker to run SBE because it's the easiest way to configure
 
 #### Docker configuration Step-by-Step
 
-- Install docker using docker instructions: https://docs.docker.com/engine/install/
-- Copy configuration files and configure them to your needs
+* Install docker using docker instructions: https://docs.docker.com/engine/install/
+* Copy configuration files and configure them to your needs
 
 ```
   cp msmtprc.example msmtprc
@@ -99,21 +99,21 @@ You can manage your backup operations with this simple xml file. Configure it as
 
 You can use following intervals
 
-- 4h, Use a full hour and add a 'h' to it. *e.g. 4h to make a backup every 4 hours. 10h to make a backup every 10 hours.*
-- 40m, Use a full minute and add a 'm' to it. *e.g. 40m to make a backup every 40 minutes.*
-- 13:12, Use hours and minutes to create a backup at this time
+* `4h`, Use a full hour and add a 'h' to it. *e.g. 4h to make a backup every 4 hours. 10h to make a backup every 10 hours.*
+* `40m`, Use a full minute and add a 'm' to it. *e.g. 40m to make a backup every 40 minutes.*
+* `13:12`, Use hours and minutes to create a backup at this time
 
 ### date
 
 You can use following dates
 
-- Wed,Thu: Use short names for any week day you want to configure the setup. You can use multiple week days separated by comma.
-- 22: Use an exact day of month to do you backup on this day
+* `Wed,Thu`: Use short names for any week day you want to configure the setup. You can use multiple week days separated by comma.
+* `22`: Use an exact day of month to do you backup on this day
 
 ### type
 
 This option helps you to categorize your backups
 
-- daily: Saves your backup to <backupimage>/daily/
-- weekly: Saves your backup to <backupimage>/weekly/
-- monthly: Saves your backup to <backupimage>/monthly/
+* `daily`: Saves your backup to <backupimage>/daily/
+* `weekly`: Saves your backup to <backupimage>/weekly/
+* `monthly`: Saves your backup to <backupimage>/monthly/
