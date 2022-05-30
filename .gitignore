@@ -13,6 +13,7 @@
 !README.md
 !docker-compose.yml
 !msmtprc.example
+!env.example
 !SBE_docker
 !SBE_docker/Dockerfile
 # etc...

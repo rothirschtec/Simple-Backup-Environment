@@ -4,8 +4,15 @@ cd $(dirname $0)
 sdir="$PWD/"
 cd ..
 hdir="$PWD/"
+cd ..
+mdir="$PWD/"
 
-source ${hdir}config
+if [ -f ${mdir}.env ]; then
+    source ${mdir}.env
+else
+    echo "You have to configure .env first. Copy from env.example to .env and configure it."
+    exit 1
+fi
 
 echo; echo $sbdir
 read -p "The content of this directory will be erased (o): " a

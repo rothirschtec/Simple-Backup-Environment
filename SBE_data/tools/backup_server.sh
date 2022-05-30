@@ -17,6 +17,9 @@ sdir="${sdir}/"
 
 cd ..
 rdir="$PWD/"
+cd ../
+mdir="$PWD/"
+
 error=false
 
 # Backup Directory
@@ -41,10 +44,11 @@ WHOLEFILE=0
 mail=root
 reports=/tmp/
 
-if [ -f ${rdir}config ]; then
-    source ${rdir}config
+if [ -f ${mdir}.env ]; then
+    source ${mdir}.env
 else
-    source ${rdir}tools/config_example
+    echo "You have to configure .env first. Copy from env.example to .env and configure it."
+    exit 1
 fi
 if [ -f ${sdir}server.config ]; then
     source ${sdir}server.config
@@ -91,7 +95,6 @@ fi
 
 # FUNCTIONS
 
-
 # Check if remote server is availabe for backup operations
 remote_server_up () {
 	ssh ${USER}@$SERVER -p $PORT "echo 2>&1" && return 0 || return 1
@@ -105,6 +108,7 @@ find_duplicates () {
     done < <(find ${bmount}${PERIOD}/ -maxdepth 1 -name $"${BID}_*" -print0)
   fi
   echo $n
+
 }
 
 # Create backup directory
@@ -141,62 +145,37 @@ create_backup_directory () {
 }
 
 # Check if there already exists a backup process for the given server and PERIOD
-process_in_queue () {
+avoid_duplicates_in_queue () {
 
   # Create directory if it does not exist
   [ -d $reports ] || mkdir -p $reports
 
-	if [ -f ${reports}SBE-queue ]; then
 
-    # @4.1 - Clean queue
-    while read rline
-    do
-      runq=$(awk -F";" '{print $1}' <<< $rline)
-      if [ ! -e /proc/${runq} -a /proc/${runq}/exe ]; then
-        if [ -f ${reports}SBE-queue-run ]; then
-          sed -i "/^$runq;.*$/d" ${reports}SBE-queue-run
-          sed -i '/^$/d' ${reports}SBE-queue-run
-        else
-          touch ${reports}SBE-queue-run
+  # Check if the PID used in queue file is active (Delete old entries)
+  for fqueue in ${reports}SBE-queue ${reports}SBE-queue-run
+  do
+    if [ -f ${fqueue} ]; then
+      while read rline
+      do
+        runq=$(awk -F";" '{print $1}' <<< $rline)
+        if [ ! -e /proc/${runq} -a /proc/${runq}/exe ]; then
+          sed -i "/^$runq;.*$/d" ${fqueue}
         fi
-      fi
-    done < ${reports}SBE-queue
-
-    # @4.2 - Check queue
-    if cat ${reports}SBE-queue | grep ${sname} | grep ${PERIOD} &> /dev/null; then
-      return 1
+      done < ${fqueue}
+      sed -i '/^$/d' ${fqueue}
+    else
+      touch ${fqueue}
     fi
+  done
+
+  # Check queue
+  if cat ${reports}SBE-queue | grep ${sname} | grep ${PERIOD} &> /dev/null; then
+
+    return 1
 
   else
-    # Create file if it does not exist
-    touch ${reports}SBE-queue
-  fi
 
-  if [ ! -f ${reports}SBE-queue-run ]; then
-    # Create file if it does not exist
-    touch ${reports}SBE-queue-run
-  fi
-
-  return 0
-
-}
-
-
-manage_queue () {
-
-	# @5 --------------------------
-  # Manage queue - To avoid heavy loads
-	st=$(($stmax+1))
-	sti=1
-	rm -f ${sdir}run
-  while [ "$st" -ge "$stmax" ]
-	do
-
-    # @5.1 - Delete empty lines in queue files
-    sed -i '/^$/d' ${reports}SBE-queue
-    sed -i '/^$/d' ${reports}SBE-queue-run
-
-    # @5.2 - Add the remote server to the queue if the PID does not exist
+    # Add the remote server to the queue if the PID does not exist
     if [ ! -f ${reports}SBE-queue ]; then
       echo "$$; ${START_DATE}; ${sname}; ${PERIOD};" >> ${reports}SBE-queue
     else
@@ -205,41 +184,41 @@ manage_queue () {
       fi
     fi
 
-    # @5.3 -  Check if SBE-queue-run exists. If not, backup should start immediately
+    return 0
+
+  fi
+
+
+}
+
+
+manage_queue () {
+
+  # Manage queue - To avoid heavy loads
+	st=$(($stmax+1))
+	sti=1
+
+  while [ "$st" -ge "$stmax" ]
+	do
+
+    # Check if SBE-queue-run exists. If not, backup should start immediately
     if [ -f ${reports}SBE-queue-run ]; then
 
-      # @5.3.1 - Pick next in queue
+      #  Delete empty lines in queue files
+      sed -i '/^$/d' ${reports}SBE-queue-run
+
+      # Pick next in queue
       queue=$(sed -n ${sti}p ${reports}SBE-queue);
 
-      # @5.3.2 - Check if the PID used in SBE-queue is really used at the moment (Delete old entries)
-      while read rline
-      do
-        runq=$(awk -F";" '{print $1}' <<< $rline)
-        if [ ! -e /proc/${runq} -a /proc/${runq}/exe ]; then
-          sed -i "/^$runq;.*$/d" ${reports}SBE-queue
-          sed -i '/^$/d' ${reports}SBE-queue
-        fi
-      done < ${reports}SBE-queue
-
-      # @5.3.3 - Check if the PID used in SBE-queue-run is really used at the moment (Delete old entries)
-      while read rline
-      do
-        runq=$(awk -F";" '{print $1}' <<< $rline)
-        if [ ! -e /proc/${runq} -a /proc/${runq}/exe ]; then
-          sed -i "/^$runq;.*$/d" ${reports}SBE-queue-run
-          sed -i '/^$/d' ${reports}SBE-queue-run
-        fi
-      done < ${reports}SBE-queue-run
-
-      # @5.3.4 - Check if there's already a backup process for the remote server in queue-run. If so, use next entry in queue
+      # Check if there's already a backup process for the remote server in queue-run. If so, use next entry in queue
       if ! cat ${reports}SBE-queue-run | grep ${sname} &> /dev/null; then
 
-        # @5.3.5 - End loop if queue exists and queue run count is less then stmax
+        # End loop if queue pid exists and queue run count is less then stmax
         if [[ $queue =~ "$$;" ]]; then
           st=$(cat ${reports}SBE-queue-run | wc -l)
         fi
 
-        # @5.3.6 - Wait for 2 seconds if
+        # Wait for 2 seconds if
         if [ $st -ge $stmax ]; then
           sleep 2
         fi
@@ -248,8 +227,9 @@ manage_queue () {
 
       else
 
+        # Increment queue id
         if [ $(cat ${reports}SBE-queue | wc -l) -gt 1 ]; then
-          sti=2
+          (( sti++ ))
         fi
 
       fi
@@ -287,6 +267,7 @@ notify () {
 
 # backup via rsync
 rsync_backup () {
+
   # The --whole-file parameter deters the remote server to dismember files for network traffic
   # Maybe this prevents the heavy loads on the server side
   if [[ $WHOLEFILE -eq 1 ]]; then
@@ -294,7 +275,6 @@ rsync_backup () {
   else
     rsync -e "ssh -p ${PORT}" "${roption[@]}" ${USER}@${SERVER}:${SHARE} ${bdir}
   fi
-
 
   # If additional rsync commands exist
   if declare -p rsyncadd >/dev/null 2>&1; then
@@ -305,6 +285,7 @@ rsync_backup () {
     done
     return 0
   fi
+
 }
 
 # Backup to a network share
@@ -333,13 +314,13 @@ elif [ $BACKUP -eq 1 ]; then
 
   [[ "$@" =~ "--log" ]] && echo "Backup process started"
 
-  remote_server_up || exit 1 && [[ "$@" =~ "--log" ]] && echo "Server is up"
-
-  process_in_queue || exit 2 && [[ "$@" =~ "--log" ]] && echo "Backup was not already in queue"
+  avoid_duplicates_in_queue || exit 2 && [[ "$@" =~ "--log" ]] && echo "Backup added to queue"
 
   manage_queue && [[ "$@" =~ "--log" ]] && echo "Managed queue"
 
   write_to_queue && [[ "$@" =~ "--log" ]] && echo "Added backup to queue"
+
+  remote_server_up || exit 1 && [[ "$@" =~ "--log" ]] && echo "Server is up"
 
   mount_backup_directory || exit 4 && [[ "$@" =~ "--log" ]] && echo "Backup directory mounted"
 
@@ -358,17 +339,17 @@ elif [ $BACKUP -eq 1 ]; then
     [[ $TYPE == "share" ]] && share_backup; tc=1
     [ $tc -eq 1 ] || exit 3
 
+    umount_backup_directory && [[ "$@" =~ "--log" ]] && echo "Backup directory unmounted"
+
     echo "Successfull backup: $(date +"%y-%m-%d %H:%M")"
-    rm -f ${sdir}run
     sed -i "/^$cID;.*$/d" ${reports}SBE-queue-run
 
     echo "$cID; ${START_DATE}; ${sname}; ${PERIOD}; $(date);" >> ${reports}SBE-done
 
   ) >> ${sdir}bac.log | tee ${rdir}all.log 2> ${sdir}err.log | tee ${rdir}all.log
 
-  [[ "$@" =~ "--log" ]] && echo "Backup done"
 
-  umount_backup_directory
+  [[ "$@" =~ "--log" ]] && echo "Backup done"
 
   notify; [[ "$@" =~ "--log" ]] && echo "Notify"
 

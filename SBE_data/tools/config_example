@@ -1,6 +1,0 @@
-mail=root
-reports=/tmp/
-sbdir=/tmp/SBE_settings/
-grep=/bin/grep
-sendmail=/usr/sbin/sendmail
-MBAST=1 # Max backups at same time
