@@ -68,8 +68,6 @@ fi
 mou="${sdir}${SHARE}"
 mdir="${sdir}${SHARE}/"
 # Remove old logs
-rm -f ${sdir}err.log
-rm -f ${sdir}bac.log
 
 CURRENT_DAY=$((10#$(date +%j)))
 CURRENT_WEEK=$((10#$(date +%V)))
@@ -318,6 +316,16 @@ elif [ $BACKUP -eq 1 ]; then
 
   manage_queue && [[ "$@" =~ "--log" ]] && echo "Managed queue"
 
+  # Backup process
+  (
+
+    rm -f ${sdir}err.log
+    rm -f ${sdir}bac.log
+
+    echo "Starting Backup: $(date +"%y-%m-%d %H:%M")"
+    echo "Backup Directory: $bdir"
+    echo ""
+
     write_to_queue && [[ "$@" =~ "--log" ]] && echo "Added backup to queue"
 
     remote_server_up || exit 1 && [[ "$@" =~ "--log" ]] && echo "Server is up"
@@ -325,13 +333,6 @@ elif [ $BACKUP -eq 1 ]; then
     mount_backup_directory || exit 4 && [[ "$@" =~ "--log" ]] && echo "Backup directory mounted"
 
     create_backup_directory || exit 5 && [[ "$@" =~ "--log" ]] && echo "Backup directory created"
-
-  # Backup process
-  (
-
-    echo "Starting Backup: $(date +"%y-%m-%d %H:%M")"
-    echo "Backup Directory: $bdir"
-    echo ""
 
     tc=0
     [[ "$@" =~ "--log" ]] && echo "Starting backup type: $TYPE"
