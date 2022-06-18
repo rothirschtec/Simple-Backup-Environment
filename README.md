@@ -13,18 +13,23 @@ We'd recommend using docker to run SBE because it's the easiest way to configure
 
 #### Docker configuration Step-by-Step
 
-- Install docker using docker instructions: https://docs.docker.com/engine/install/
-- Copy configuration files and configure them to your needs
+* Install docker using docker instructions: https://docs.docker.com/engine/install/
+* Copy configuration files and configure them to your needs
+
+```
   cp msmtprc.example msmtprc
   cp env.example .env
   vim msmtprc
   vim .env
   docker-compose build
   docker-compose up -d
+```
 
 Work with the container
 
+```
   docker exec -ti sbe.your.domain bash
+```
 
 
 ### Install locally
@@ -39,11 +44,13 @@ Use the install list from SBE_docker/Dockerfile do install dependencies you need
 
 Copy service file to systemd and change location of *ExecStart=/../RT-Blog-SBE/SBE_data/main.sh*
 
+```
   cp SBE_data/tools/sbe.service /etc/systemd/system/sbe.service
   vim SBE_data/tools/sbe.service
   systemctl daemon-reload
   systemctl enable sbe
   systemctl start sbe
+```
 
 
 ## Configure backups
@@ -52,22 +59,29 @@ Copy service file to systemd and change location of *ExecStart=/../RT-Blog-SBE/S
 
 You use the add_host.sh script to configure the backups for a host
 
+```
   cd SBE_data
   ./tools/add_host.sh
+```
 
 If you want to encrypt your backup location use --encrypted (ALPHA)
 
+```
   ./tools/add_host.sh --encrypted
+```
 
 Follow the instructions of the script
 
 ### backup.xml
 
+```
   cd SBE_data
   cp tools/backup.xml-example backup.xml
+```
 
 You can manage your backup operations with this simple xml file. Configure it as followed:
 
+```
   <server>
     <backupdirectory>backup directory name</backupdirectory>
     <intervall>4h</intervall>
@@ -79,26 +93,27 @@ You can manage your backup operations with this simple xml file. Configure it as
     <intervall>03:15</intervall>
     <date>Wed,Thu,Fri</date>
     ...
+```
 
 ### intervall
 
 You can use following intervals
 
-- 4h, Use a full hour and add a 'h' to it. *e.g. 4h to make a backup every 4 hours. 10h to make a backup every 10 hours.*
-- 40m, Use a full minute and add a 'm' to it. *e.g. 40m to make a backup every 40 minutes.*
-- 13:12, Use hours and minutes to create a backup at this time
+* `4h`, Use a full hour and add a 'h' to it. *e.g. 4h to make a backup every 4 hours. 10h to make a backup every 10 hours.*
+* `40m`, Use a full minute and add a 'm' to it. *e.g. 40m to make a backup every 40 minutes.*
+* `13:12`, Use hours and minutes to create a backup at this time
 
 ### date
 
 You can use following dates
 
-- Wed,Thu: Use short names for any week day you want to configure the setup. You can use multiple week days separated by comma.
-- 22: Use an exact day of month to do you backup on this day
+* `Wed,Thu`: Use short names for any week day you want to configure the setup. You can use multiple week days separated by comma.
+* `22`: Use an exact day of month to do you backup on this day
 
 ### type
 
 This option helps you to categorize your backups
 
-- daily: Saves your backup to <backupimage>/daily/
-- weekly: Saves your backup to <backupimage>/weekly/
-- monthly: Saves your backup to <backupimage>/monthly/
+* `daily`: Saves your backup to <backupimage>/daily/
+* `weekly`: Saves your backup to <backupimage>/weekly/
+* `monthly`: Saves your backup to <backupimage>/monthly/
