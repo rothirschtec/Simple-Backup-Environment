@@ -316,11 +316,11 @@ elif [ $BACKUP -eq 1 ]; then
 
   manage_queue && [[ "$@" =~ "--log" ]] && echo "Managed queue"
 
+  rm -f ${sdir}err.log
+  rm -f ${sdir}bac.log
+
   # Backup process
   (
-
-    rm -f ${sdir}err.log
-    rm -f ${sdir}bac.log
 
     echo "Starting Backup: $(date +"%y-%m-%d %H:%M")"
     echo "Backup Directory: $bdir"
