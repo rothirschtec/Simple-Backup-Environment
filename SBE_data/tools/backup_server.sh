@@ -216,7 +216,6 @@ manage_queue () {
         # End loop if queue pid exists and queue run count is less then stmax
         if [[ $queue =~ "$$;" ]]; then
           st=$(cat ${reports}SBE-queue-run | wc -l)
-          return 1
         fi
 
         # Wait for 2 seconds if
@@ -240,8 +239,6 @@ manage_queue () {
     fi
 
 	done
-
-  return 0
 
 }
 
@@ -319,7 +316,7 @@ elif [ $BACKUP -eq 1 ]; then
 
   avoid_duplicates_in_queue || exit 2 && [[ "$@" =~ "--log" ]] && echo "Backup added to queue"
 
-  manage_queue || exit 3 && [[ "$@" =~ "--log" ]] && echo "Managed queue"
+  manage_queue && [[ "$@" =~ "--log" ]] && echo "Managed queue"
 
   # Backup process
   (
