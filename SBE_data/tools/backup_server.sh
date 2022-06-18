@@ -348,6 +348,8 @@ elif [ $BACKUP -eq 1 ]; then
 
   ) >> ${sdir}bac.log | tee ${rdir}all.log 2> ${sdir}err.log | tee ${rdir}all.log
 
+  wait
+
 
   [[ "$@" =~ "--log" ]] && echo "Backup done"
 
