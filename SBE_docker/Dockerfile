@@ -23,6 +23,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
         pwgen           \
         cryptsetup      \
         mailutils       \
+        libxml2-utils   \
         msmtp           \
         msmtp-mta       \
     && rm -rf /var/lib/apt/lists/*
