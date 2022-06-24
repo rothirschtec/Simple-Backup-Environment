@@ -68,8 +68,6 @@ fi
 mou="${sdir}${SHARE}"
 mdir="${sdir}${SHARE}/"
 # Remove old logs
-rm -f ${sdir}err.log
-rm -f ${sdir}bac.log
 
 CURRENT_DAY=$((10#$(date +%j)))
 CURRENT_WEEK=$((10#$(date +%V)))
@@ -318,13 +316,8 @@ elif [ $BACKUP -eq 1 ]; then
 
   manage_queue && [[ "$@" =~ "--log" ]] && echo "Managed queue"
 
-  write_to_queue && [[ "$@" =~ "--log" ]] && echo "Added backup to queue"
-
-  remote_server_up || exit 1 && [[ "$@" =~ "--log" ]] && echo "Server is up"
-
-  mount_backup_directory || exit 4 && [[ "$@" =~ "--log" ]] && echo "Backup directory mounted"
-
-  create_backup_directory || exit 5 && [[ "$@" =~ "--log" ]] && echo "Backup directory created"
+  rm -f ${sdir}err.log
+  rm -f ${sdir}bac.log
 
   # Backup process
   (
@@ -332,6 +325,14 @@ elif [ $BACKUP -eq 1 ]; then
     echo "Starting Backup: $(date +"%y-%m-%d %H:%M")"
     echo "Backup Directory: $bdir"
     echo ""
+
+    write_to_queue && [[ "$@" =~ "--log" ]] && echo "Added backup to queue"
+
+    remote_server_up || exit 1 && [[ "$@" =~ "--log" ]] && echo "Server is up"
+
+    mount_backup_directory || exit 4 && [[ "$@" =~ "--log" ]] && echo "Backup directory mounted"
+
+    create_backup_directory || exit 5 && [[ "$@" =~ "--log" ]] && echo "Backup directory created"
 
     tc=0
     [[ "$@" =~ "--log" ]] && echo "Starting backup type: $TYPE"
@@ -347,7 +348,6 @@ elif [ $BACKUP -eq 1 ]; then
     echo "$cID; ${START_DATE}; ${sname}; ${PERIOD}; $(date);" >> ${reports}SBE-done
 
   ) >> ${sdir}bac.log | tee ${rdir}all.log 2> ${sdir}err.log | tee ${rdir}all.log
-
 
   [[ "$@" =~ "--log" ]] && echo "Backup done"
 

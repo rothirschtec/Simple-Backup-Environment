@@ -39,10 +39,12 @@ do
   # Parse backup.xml
   if [ -f ${hdir}backup.xml ]; then
 
-  	b_dirs=($($grep -oP '(?<=<backupdirectory>).*?(?=</backupdirectory>)' ${hdir}backup.xml))
-  	b_invs=($($grep -oP '(?<=<intervall>).*?(?=</intervall>)' ${hdir}backup.xml))
-  	b_dats=($($grep -oP '(?<=<date>).*?(?=</date>)' ${hdir}backup.xml))
-  	b_type=($($grep -oP '(?<=<type>).*?(?=</type>)' ${hdir}backup.xml))
+    xmllint --noout --schema ${hdir}tools/backup.xsd ${hdir}backup.xml || exit 2 && echo "XML valid"
+
+  	b_dirs=($($(which grep) -oP '(?<=<backupdirectory>).*?(?=</backupdirectory>)' ${hdir}backup.xml))
+  	b_invs=($($(which grep) -oP '(?<=<intervall>).*?(?=</intervall>)' ${hdir}backup.xml))
+  	b_dats=($($(which grep) -oP '(?<=<date>).*?(?=</date>)' ${hdir}backup.xml))
+  	b_type=($($(which grep) -oP '(?<=<type>).*?(?=</type>)' ${hdir}backup.xml))
 
   else
 

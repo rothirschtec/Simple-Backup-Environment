@@ -9,7 +9,7 @@ This script is meant to run on a *backup server*. From this, any backup will be 
 
 ### Docker
 
-We'd recommend using docker to run SBE because it's the easiest way to configure the whole thing. But in some cases you have to use the local installation. Scroll down to install anything locally.
+I'd recommend using docker to run SBE because it's the easiest way to configure the whole thing. But in some cases you have to use the local installation. Scroll down to install anything locally.
 
 #### Docker configuration Step-by-Step
 
