@@ -323,8 +323,6 @@ elif [ $BACKUP -eq 1 ]; then
   (
 
     echo "Starting Backup: $(date +"%y-%m-%d %H:%M")"
-    echo "Backup Directory: $bdir"
-    echo ""
 
     write_to_queue && [[ "$@" =~ "--log" ]] && echo "Added backup to queue"
 
@@ -334,6 +332,9 @@ elif [ $BACKUP -eq 1 ]; then
 
     create_backup_directory || exit 5 && [[ "$@" =~ "--log" ]] && echo "Backup directory created"
 
+    echo "Backup Directory: $bdir"
+    echo ""
+    
     tc=0
     [[ "$@" =~ "--log" ]] && echo "Starting backup type: $TYPE"
     [[ $TYPE == "rsync" ]] && rsync_backup; tc=1
