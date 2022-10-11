@@ -332,9 +332,10 @@ elif [ $BACKUP -eq 1 ]; then
 
     create_backup_directory || exit 5 && [[ "$@" =~ "--log" ]] && echo "Backup directory created"
 
+    echo "Backup from: ${USER}@${SERVER}:${SHARE}"
     echo "Backup Directory: $bdir"
     echo ""
-    
+
     tc=0
     [[ "$@" =~ "--log" ]] && echo "Starting backup type: $TYPE"
     [[ $TYPE == "rsync" ]] && rsync_backup; tc=1
