@@ -18,6 +18,7 @@ get_project_name () {
   do
     if [ -f ${project}/server.config ] && [[ $project != "tools" ]]; then
       echo $project
+      source ${project}/server.config
     fi
   done
 
