@@ -191,6 +191,16 @@ do
     fi
   done
 
+  # Get current time
+  currentTime=$(date +"%H%M")
+
+  # Check if current time is 1800
+  if [ "$currentTime" -eq "1800" ]; then
+
+    bash "${hdir}tools/checker.sh"
+
+  fi
+
   # Wait for a minute is absolute necessary
   sleep 60
 
