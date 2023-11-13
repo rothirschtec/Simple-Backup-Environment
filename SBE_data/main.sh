@@ -1,11 +1,14 @@
 #!/bin/bash
 
-cd $(dirname $0)
+cd "$(dirname "$0")" || exit
 hdir="$PWD/"
-cd ..
+cd .. || exit
 mdir="$PWD/"
 
+
 [[ "$@" =~ "--logs" ]] && logs=1 ||  logs=0
+# Assigning "--logs" check to logs variable directly
+logs=$([[ "$@" =~ "--logs" ]] && echo 1 || echo 0)
 
 # # #
 # Update scripts
@@ -15,10 +18,7 @@ function getlatest() {
     bash ${hdir}tools/update_scripts.sh
 }
 
-if [[ $1 == "update" ]]; then
-    getlatest
-    exit 0
-fi
+[[ $1 == "update" ]] && { getlatest; exit 0; }
 
 # # #
 # Program
