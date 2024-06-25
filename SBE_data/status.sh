@@ -1,48 +1,43 @@
 #!/bin/bash
 
-
-cd $(dirname $0)
+cd "$(dirname "$0")"
 hdir="$PWD/"
-cd ../
+cd ..
 mdir="$PWD/"
 
-# # #
 # Parse config
-if [ -f ${mdir}.env ]; then
-    source ${mdir}.env
+if [ -f "${mdir}.env" ]; then
+	source "${mdir}.env"
 else
-      echo "You have to configure .env first. Copy from env.example to .env and configure it."
-      exit 1
+	echo "You have to configure .env first. Copy from env.example to .env and configure it."
+	exit 1
 fi
+
 source /etc/os-release
-echo $NAME
+echo "$NAME"
 
 echo; echo "QUEUE STATUS"
 echo "------------"
 
 echo; echo "Current queue:"
-cat ${reports}SBE-queue
+cat "${reports}SBE-queue"
 
 echo; echo "Backups running at the moment:"
-while read line
-do
-	echo $line
-	pid=$(awk -F ';' '{print $1}' <<< $line)
+while read -r line; do
+	echo "$line"
+	pid=$(awk -F ';' '{print $1}' <<< "$line")
 
-	if ps -p $pid &>/dev/null; then
-		echo "  > Task ist still alive"
+	if ps -p "$pid" &>/dev/null; then
+		echo "  > Task is still alive"
 	else
 		echo "  > No task with PID detected"
 	fi
-
-done < ${reports}SBE-queue-run
-
-
+done < "${reports}SBE-queue-run"
 
 echo; echo "Backups done:"
-if [ -f ${reports}SBE-done ]; then
+if [ -f "${reports}SBE-done" ]; then
 	echo "(Last 10)"
-	tail -10 ${reports}SBE-done
+	tail -10 "${reports}SBE-done"
 else
 	echo "No backups with state DONE"
 fi
