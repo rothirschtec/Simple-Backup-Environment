@@ -10,8 +10,8 @@ services:
     volumes:
       - ${sshdir}:/root/.ssh
       - ./:/opt/SBE
-      - ./reports:${reports}
-      - ./settings:${sbdir}
+      - ${reports}:${reports}
+      - ${sbdir}:${sbdir}
       - ./msmtprc:/etc/msmtprc
       - /etc/localtime:/etc/localtime:ro
     networks:

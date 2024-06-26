@@ -25,7 +25,6 @@ BWEEKS=1
 BMONTHS=1
 WHOLEFILE=0
 mail=root
-reports=/tmp/
 
 # Load configuration files
 if [ -f "${mdir}.env" ]; then
