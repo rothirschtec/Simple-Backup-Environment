@@ -249,7 +249,6 @@ write_to_queue () {
 }
 
 
-
 # MAIN
 
 if [[ "$@" =~ "--set-code" ]]; then
@@ -286,6 +285,9 @@ elif [ "$BACKUP" -eq 1 ]; then
         rsync_backup || { echo "Failed to perform rsync backup"; exit 1; }
         
         echo "Successful backup: $(date +"%y-%m-%d %H:%M")"
+
+        sed -i "/^$cID;.*$/d" ${reports}SBE-queue-run
+
     ) >> "${sdir}bac.log" 2> "${sdir}err.log"
 
     if [ -s "${sdir}err.log" ]; then
