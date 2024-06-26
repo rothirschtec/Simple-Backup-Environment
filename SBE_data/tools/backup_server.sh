@@ -279,16 +279,20 @@ elif [ "$BACKUP" -eq 1 ]; then
         fetch_remote_unique_code_file || { echo "Failed to fetch remote unique code file"; exit 1; }
 
         compare_unique_code_files
+
+        mount_backup_directory || exit 4 && [[ "$@" =~ "--log" ]] && echo "Backup directory mounted"
         
         create_backup_directory || { echo "Failed to create backup directory"; exit 1; }
         
         rsync_backup || { echo "Failed to perform rsync backup"; exit 1; }
-        
+       
+        umount_backup_directory && [[ "$@" =~ "--log" ]] && echo "Backup directory unmounted" 
+
         echo "Successful backup: $(date +"%y-%m-%d %H:%M")"
 
         sed -i "/^$cID;.*$/d" ${reports}SBE-queue-run
 
-    ) >> "${sdir}bac.log" 2> "${sdir}err.log"
+    ) >> ${sdir}bac.log | tee ${rdir}all.log 2> ${sdir}err.log | tee ${rdir}all.log
 
     if [ -s "${sdir}err.log" ]; then
         notify_failure
