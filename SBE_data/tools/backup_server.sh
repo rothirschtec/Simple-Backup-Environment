@@ -91,9 +91,13 @@ compare_unique_code_files () {
     exit 0
 }
 
+generate_unique_code () {
+    openssl rand -hex 32 
+}
+
 update_unique_code_files () {
     local unique_code=$1
-    echo "$unique_code" > ${sdir}master_backup_unique_code.txt
+    echo "$unique_code" > "${sdir}master_backup_unique_code.txt"
     create_remote_unique_code_file "$unique_code"
 }
 
@@ -124,13 +128,10 @@ notify_failure () {
 # MAIN
 
 if [[ "$@" =~ "--set-code" ]]; then
-    unique_code=$2
-    if [ -z "$unique_code" ]; then
-        echo "ERROR: Unique code not provided."
-        exit 1
-    fi
+
+    unique_code=$(generate_unique_code)
     update_unique_code_files "$unique_code" || exit 1
-    echo "Unique code files updated successfully."
+    echo "Unique code files created and updated successfully."
     exit 0
 
 elif [[ "$@" =~ "--sshCopy" ]]; then
