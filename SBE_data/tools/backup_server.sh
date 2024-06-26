@@ -75,7 +75,7 @@ remote_server_up () {
 
 create_remote_unique_code_file () {
     local unique_code=$1
-    ssh ${USER}@${SERVER} -p $PORT "echo '$unique_code' > "${SHARE}.sbe_code.txt"
+    ssh ${USER}@${SERVER} -p $PORT "echo '$unique_code' > ${SHARE}.sbe_code.txt"
 }
 
 fetch_remote_unique_code_file () {
