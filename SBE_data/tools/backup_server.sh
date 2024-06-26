@@ -83,7 +83,7 @@ fetch_remote_unique_code_file () {
 }
 
 compare_unique_code_files () {
-    if ! cmp -s "${sdir}/master_backup_unique_code.txt" "${sdir}/remote_backup_unique_code.txt"; then
+    if cmp -s "${sdir}/master_backup_unique_code.txt" "${sdir}/remote_backup_unique_code.txt"; then
         echo "Unique codes match. Backup will proceed."
         return 0
     fi
