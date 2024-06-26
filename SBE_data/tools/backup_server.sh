@@ -100,15 +100,51 @@ update_unique_code_files () {
     create_remote_unique_code_file "$unique_code"
 }
 
-create_backup_directory () {
-  if [[ $PERIOD != "latest" ]]; then
-    bdir="${bmount}${PERIOD}/${BID}_$(date +"%Y-%m-%d_%H%M%S")"
-    mkdir -p "$bdir"
-  else
-    bdir="${bmount}${PERIOD}"
-    mkdir -p "$bdir"
+find_duplicates () {
+  local n=0
+  if [ -d ${bmount}${PERIOD} ]; then
+    while read -r -d ''; do
+      ((n++))
+    done < <(find ${bmount}${PERIOD}/ -maxdepth 1 -name $"${BID}_*" -print0)
   fi
+  echo $n
+
 }
+
+# Create backup directory
+create_backup_directory () {
+
+  if [[ $PERIOD != "latest" ]]; then
+
+    bdir="${bmount}${PERIOD}/${BID}_$(date +"%Y-%m-%d_%H%M%S")"
+
+    n=$(find_duplicates)
+
+    if [ $n -eq 1 ]; then
+      olddir=$(echo ${bmount}${PERIOD}/${BID}_*)
+      mv $olddir $bdir
+    elif [ $n -eq 0 ]; then
+      mkdir -p ${bdir}
+    fi
+
+    n=$(find_duplicates)
+
+    if [ $n -gt 1 ]; then
+      echo "There are multiple backups with same BID (Backup ID). Related name $sname"
+      echo -e "Subject: There are multiple backups with same BID (Backup ID). Related name $sname on $HOSTNAME\n\n" | $sendmail $mail
+      exit 4
+    fi
+
+  else
+
+    bdir="${bmount}${PERIOD}"
+    mkdir -p ${bdir}
+
+  fi
+
+}
+
+
 
 # backup via rsync
 rsync_backup () {
@@ -291,6 +327,7 @@ elif [ "$BACKUP" -eq 1 ]; then
         echo "Successful backup: $(date +"%y-%m-%d %H:%M")"
 
         sed -i "/^$cID;.*$/d" ${reports}SBE-queue-run
+        echo "$cID; ${START_DATE}; ${sname}; ${PERIOD}; $(date);" >> ${reports}SBE-done
 
     ) >> ${sdir}bac.log | tee ${rdir}all.log 2> ${sdir}err.log | tee ${rdir}all.log
 
