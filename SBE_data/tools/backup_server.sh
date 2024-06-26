@@ -111,10 +111,27 @@ create_backup_directory () {
   fi
 }
 
+# backup via rsync
 rsync_backup () {
-    rsync_opts=("--whole-file -e" "ssh -p ${PORT}" "${roption[@]}" "${USER}@${SERVER}:${SHARE}" "$bdir")
-    [[ $WHOLEFILE -ne 1 ]] && unset rsync_opts[0]
-    rsync "${rsync_opts[@]}"
+
+  # The --whole-file parameter deters the remote server to dismember files for network traffic
+  # Maybe this prevents the heavy loads on the server side
+  if [[ $WHOLEFILE -eq 1 ]]; then
+    rsync --whole-file -e "ssh -p ${PORT}" "${roption[@]}" ${USER}@${SERVER}:${SHARE} ${bdir}
+  else
+    rsync -e "ssh -p ${PORT}" "${roption[@]}" ${USER}@${SERVER}:${SHARE} ${bdir}
+  fi
+
+  # If additional rsync commands exist
+  if declare -p rsyncadd >/dev/null 2>&1; then
+    rsyncsize=${#rsyncadd[@]}
+    for radd in "${rsyncadd[@]}"
+    do
+      eval ${radd}
+    done
+    return 0
+  fi
+
 }
 
 notify_success () {
