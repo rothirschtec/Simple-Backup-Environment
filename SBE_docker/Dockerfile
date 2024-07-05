@@ -35,4 +35,4 @@ RUN mkdir -p $workdir \
 	&& mkdir -p $reportdir
 WORKDIR $workdir
 
-CMD ["/opt/SBE/SBE_data/main.sh", "--logs"]
+CMD ["/opt/SBE/SBE_data/main.sh"]
