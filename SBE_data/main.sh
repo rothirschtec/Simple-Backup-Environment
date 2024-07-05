@@ -4,6 +4,7 @@ cd "$(dirname "$0")" || exit
 hdir="$PWD/"
 cd .. || exit
 mdir="$PWD/"
+overwriteRun=0
 
 logs=$([[ "$@" =~ "--logs" ]] && echo 1 || echo 0)
 
@@ -23,12 +24,19 @@ getlatest() {
 [[ $1 == "update" ]] && { getlatest; exit 0; }
 
 while :; do
+
+
     # Parse config
     if [ -f "${mdir}.env" ]; then
         source "${mdir}.env"
     else
         echo "You have to configure .env first. Copy from env.example to .env and configure it."
         exit 1
+    fi
+
+    if [ overwriteRun -eq 0 ]; then
+        echo "" > ${reports}SBE-queue-run
+        overwriteRun=1
     fi
 
     # Parse backup.xml
