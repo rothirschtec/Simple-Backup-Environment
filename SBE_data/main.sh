@@ -30,10 +30,32 @@ while :; do
         xmllint --noout --schema "${hdir}tools/backup.xsd" "${hdir}backup.xml" || exit 2
         echo "XML valid"
 
-        b_dirs=($(grep -oP '(?<=<backupdirectory>).*?(?=</backupdirectory>)' "${hdir}backup.xml"))
-        b_invs=($(grep -oP '(?<=<intervall>).*?(?=</intervall>)' "${hdir}backup.xml"))
-        b_dats=($(grep -oP '(?<=<date>).*?(?=</date>)' "${hdir}backup.xml"))
-        b_type=($(grep -oP '(?<=<type>).*?(?=</type>)' "${hdir}backup.xml"))
+        backup_xml="${hdir}backup.xml"
+        # Read <backupdirectory> tags into b_dirs array
+        b_dirs=()
+        while IFS= read -r line; do
+        b_dirs+=("$line")
+        done < <(grep -oP '(?<=<backupdirectory>).*?(?=</backupdirectory>)' "$backup_xml")
+
+        # Read <intervall> tags into b_invs array
+        b_invs=()
+        while IFS= read -r line; do
+        b_invs+=("$line")
+        done < <(grep -oP '(?<=<intervall>).*?(?=</intervall>)' "$backup_xml")
+
+        # Read <date> tags into b_dats array
+        b_dats=()
+        while IFS= read -r line; do
+        b_dats+=("$line")
+        done < <(grep -oP '(?<=<date>).*?(?=</date>)' "$backup_xml")
+
+        # Read <type> tags into b_type array
+        b_type=()
+        while IFS= read -r line; do
+        b_type+=("$line")
+        done < <(grep -oP '(?<=<type>).*?(?=</type>)' "$backup_xml")
+
+
     else
         message="backup.xml does not exist"
         echo "$message"
@@ -109,7 +131,7 @@ while :; do
 
         if [ ${dobackup[0]} -eq 1 ] && [ ${dobackup[1]} -eq 1 ]; then
             if [ -f "${hdir}${b_dirs[$x]}/backup_server.sh" ]; then
-                echo "Backup ${b_dirs[$x]}"
+                echo "Backup ${b_dirs[$x]} started"
                 bash "${hdir}${b_dirs[$x]}/backup_server.sh" "--${b_type[$x]}" &
                 message="Backup for ${b_dirs[$x]} under way..."
             else
