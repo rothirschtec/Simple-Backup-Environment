@@ -7,6 +7,12 @@ mdir="$PWD/"
 
 logs=$([[ "$@" =~ "--logs" ]] && echo 1 || echo 0)
 
+# Wait until the start of the next minute
+printf "Waiting for the start of the next minute...\n"
+while [ "$(date +%S)" -ne "00" ]; do
+    sleep 1
+done
+
 # Update scripts
 getlatest() {
     echo "Getting latest version"
