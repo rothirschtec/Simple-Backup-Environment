@@ -35,6 +35,7 @@ while :; do
     fi
 
     if [ $overwriteRun -eq 0 ]; then
+        echo "Clearing run queue"
         echo "" > ${reports}SBE-queue-run
         overwriteRun=1
     fi
