@@ -27,35 +27,33 @@ while :; do
 
     # Parse backup.xml
     if [ -f "${hdir}backup.xml" ]; then
-        xmllint --noout --schema "${hdir}tools/backup.xsd" "${hdir}backup.xml" || exit 2
+        xmllint --noout --schema "${hdir}tools/backup.xsd" "${hdir}backup.xml"
+        if [ $? -ne 0 ]; then 
+            echo "Invalid XML format"
+            exit 2
+        fi
         echo "XML valid"
 
         backup_xml="${hdir}backup.xml"
-        # Read <backupdirectory> tags into b_dirs array
         b_dirs=()
         while IFS= read -r line; do
-        b_dirs+=("$line")
+            b_dirs+=("$line")
         done < <(grep -oP '(?<=<backupdirectory>).*?(?=</backupdirectory>)' "$backup_xml")
 
-        # Read <intervall> tags into b_invs array
         b_invs=()
         while IFS= read -r line; do
-        b_invs+=("$line")
+            b_invs+=("$line")
         done < <(grep -oP '(?<=<intervall>).*?(?=</intervall>)' "$backup_xml")
 
-        # Read <date> tags into b_dats array
         b_dats=()
         while IFS= read -r line; do
-        b_dats+=("$line")
+            b_dats+=("$line")
         done < <(grep -oP '(?<=<date>).*?(?=</date>)' "$backup_xml")
 
-        # Read <type> tags into b_type array
         b_type=()
         while IFS= read -r line; do
-        b_type+=("$line")
+            b_type+=("$line")
         done < <(grep -oP '(?<=<type>).*?(?=</type>)' "$backup_xml")
-
-
     else
         message="backup.xml does not exist"
         echo "$message"
@@ -67,6 +65,11 @@ while :; do
     # Start backups
     for ((x = 0; x < ${#b_dirs[@]}; x++)); do
         dobackup=(0 0 0)
+        
+        # Debug information
+        echo "Checking backup for: ${b_dirs[$x]}"
+        echo "Intervall: ${b_invs[$x]}"
+        echo "Date: ${b_dats[$x]}"
 
         if [[ $1 == "now" ]]; then
             dobackup=(1 1 1)
@@ -104,17 +107,16 @@ while :; do
                 [ $logs -eq 1 ] && echo "Not valid ${b_invs[$x]} =~ $b_date"
             fi
 
+            # Enhanced date matching logic
             case "${b_dats[$x]}" in
-                [0-9][0-9]) b_dat=$(date +"%m") ;;
-                [0-9]) 
-                    b_dats[x]="0${b_dats[$x]}"
-                    b_dat=$(date +"%m")
+                [0-9]|[0-2][0-9]|3[0-1])  # Numeric day, e.g., "20"
+                    b_dat=$(date +"%d") 
+                    if ((10#$b_dat == 10#${b_dats[$x]})); then dobackup[1]=1; fi
                     ;;
-                [A-Za-z]*)
-                    b_dat=$(date +"%A")
-                    ;;
-                [A-Za-z][a-z][a-z])
-                    b_dat=$(date +"%a")
+                [A-Za-z][a-z][a-z]|[A-Z][a-z]*)  # Day name, e.g., "Mon" or "Monday"
+                    b_day_short=$(date +"%a")
+                    b_day_full=$(date +"%A")
+                    if [[ ",${b_dats[$x]}," == *",$b_day_short,"* ]] || [[ ",${b_dats[$x]}," == *",$b_day_full,"* ]]; then dobackup[1]=1; fi
                     ;;
                 *)
                     echo "Unknown configuration: ${b_dats[$x]}"
@@ -122,14 +124,14 @@ while :; do
                     ;;
             esac
 
-            if [[ "${b_dats[$x]}" == *"$b_dat"* ]]; then
-                dobackup[1]=1
-            else
-                [ $logs -eq 1 ] && echo "Not valid ${b_dats[$x]} =~ $b_dat"
+            if [ ${dobackup[1]} -ne 1 ]; then
+                [ $logs -eq 1 ] && echo "Not valid ${b_dats[$x]} =~ $b_dat/$b_day_short/$b_day_full"
             fi
+
         fi
 
         if [ ${dobackup[0]} -eq 1 ] && [ ${dobackup[1]} -eq 1 ]; then
+            echo "Conditions met for backup: ${b_dirs[$x]}"
             if [ -f "${hdir}${b_dirs[$x]}/backup_server.sh" ]; then
                 echo "Backup ${b_dirs[$x]} started"
                 bash "${hdir}${b_dirs[$x]}/backup_server.sh" "--${b_type[$x]}" &
@@ -139,6 +141,8 @@ while :; do
                 echo "$message"
                 echo -e "Subject: $message\n\nNew message from SBE" | $sendmail $mail
             fi
+        else
+            echo "Conditions not met for backup: ${b_dirs[$x]}"
         fi
     done
 
@@ -151,4 +155,3 @@ while :; do
 done
 
 exit 0
-
