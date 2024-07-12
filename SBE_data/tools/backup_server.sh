@@ -1,101 +1,103 @@
 #!/bin/bash
-#
-# You can copy your ssh key to the remote server if you want
-# backup_server.sh --sshCopy
-# Dependencies:
-# - sendmail
-# - cryptsetup
 
-# Set variables
+# Dependencies: sendmail, cryptsetup, ssh, rsync
 
-# Directories
-cd $(dirname $0)
-source ../tools/lib/*
+# Set directories and variables
+cd "$(dirname "$0")"
+source ../tools/lib/* || exit 1
+
 sdir="$PWD"
-sname=${sdir##*/}
-sdir="${sdir}/"
+sname="${sdir##*/}"
+sdir="$sdir/"
 
 cd ..
 rdir="$PWD/"
-cd ../
+cd ..
 mdir="$PWD/"
 
 error=false
 
-# Backup Directory
+# Default variables
 bdir="none"
-# Backup mounted loop device
-bdisk="none"
-# loop device mount location
 bmount="none"
-
-# Dates and types
 BDAYS=1
 BWEEKS=1
 BMONTHS=1
-
-# Rsync WHOLEFILE option. If not in server.config set to 0
 WHOLEFILE=0
-
+mail=root
 
 # Load configuration files
-
-# Default configuration can be changed in config file
-mail=root
-reports=/tmp/
-
-if [ -f ${mdir}.env ]; then
-    source ${mdir}.env
+if [ -f "${mdir}.env" ]; then
+    source "${mdir}.env"
 else
     echo "You have to configure .env first. Copy from env.example to .env and configure it."
     exit 1
 fi
-if [ -f ${sdir}server.config ]; then
-    source ${sdir}server.config
+
+if [ -f "${sdir}server.config" ]; then
+    source "${sdir}server.config"
 else
     echo "No server.config found!!!"
     exit 6
 fi
 
 re='^[0-9]+$'
-if [[ $MBAST =~ $re ]]; then
-	stmax=$MBAST
-else
-	stmax=2
-fi
+stmax=${MBAST//[^0-9]/}  # Ensure stmax is numeric
+stmax=${stmax:-2}
 
-# Define shares
 mou="${sdir}${SHARE}"
 mdir="${sdir}${SHARE}/"
-# Remove old logs
 
 CURRENT_DAY=$((10#$(date +%j)))
 CURRENT_WEEK=$((10#$(date +%V)))
 CURRENT_MONTH=$((10#$(date +%m)))
 START_DATE=$(date)
 
-if [[ $@ =~ "--weekly" ]]; then
-  [[ $BWEEKS -eq 0 ]] && echo "BWEEKS is set to 0 in server.config" && exit 6
-  BID=$(( CURRENT_WEEK % BWEEKS ))
-  PERIOD="weekly"
-elif [[ $@ =~ "--monthly" ]]; then
-  [[ $BMONTHS -eq 0 ]] && echo "BMONTHS is set to 0 in server.config" && exit 6
-  BID=$(( CURRENT_MONTH % BMONTHS ))
-  PERIOD="monthly"
-elif [[ $@ =~ "--latest" ]]; then
-  PERIOD="latest"
-else
-  [[ $BDAYS -eq 0 ]] && echo "BDAYS is set to 0 in server.config" && exit 6
-  BID=$(( CURRENT_DAY % BDAYS ))
-  PERIOD="daily"
-fi
-
+case "$@" in
+  *--weekly*) [[ $BWEEKS -eq 0 ]] && { echo "BWEEKS is set to 0 in server.config"; exit 6; }
+              BID=$(( CURRENT_WEEK % BWEEKS ))
+              PERIOD="weekly";;
+  *--monthly*) [[ $BMONTHS -eq 0 ]] && { echo "BMONTHS is set to 0 in server.config"; exit 6; }
+               BID=$(( CURRENT_MONTH % BMONTHS ))
+               PERIOD="monthly";;
+  *--latest*) PERIOD="latest";;
+  *) [[ $BDAYS -eq 0 ]] && { echo "BDAYS is set to 0 in server.config"; exit 6; }
+     BID=$(( CURRENT_DAY % BDAYS ))
+     PERIOD="daily";;
+esac
 
 # FUNCTIONS
 
-# Check if remote server is availabe for backup operations
 remote_server_up () {
-	ssh ${USER}@$SERVER -p $PORT "echo 2>&1" && return 0 || return 1
+    ssh ${USER}@${SERVER} -p $PORT "echo 2>&1" && return 0 || return 1
+}
+
+create_remote_unique_code_file () {
+    local unique_code=$1
+    ssh ${USER}@${SERVER} -p $PORT "echo '$unique_code' > ${SHARE}.sbe_code.txt"
+}
+
+fetch_remote_unique_code_file () {
+    scp -P $PORT ${USER}@${SERVER}:${SHARE}.sbe_code.txt "${sdir}remote_backup_unique_code.txt"
+}
+
+compare_unique_code_files () {
+    if cmp -s "${sdir}/master_backup_unique_code.txt" "${sdir}/remote_backup_unique_code.txt"; then
+        echo "Unique codes match. Backup will proceed."
+        return 0
+    fi
+    echo "Unique codes do not match. Is something corrupt?"
+    exit 0
+}
+
+generate_unique_code () {
+    openssl rand -hex 32 
+}
+
+update_unique_code_files () {
+    local unique_code=$1
+    echo "$unique_code" > "${sdir}master_backup_unique_code.txt"
+    create_remote_unique_code_file "$unique_code"
 }
 
 find_duplicates () {
@@ -140,6 +142,39 @@ create_backup_directory () {
 
   fi
 
+}
+
+
+
+# backup via rsync
+rsync_backup () {
+
+  # The --whole-file parameter deters the remote server to dismember files for network traffic
+  # Maybe this prevents the heavy loads on the server side
+  if [[ $WHOLEFILE -eq 1 ]]; then
+    rsync --whole-file -e "ssh -p ${PORT}" "${roption[@]}" ${USER}@${SERVER}:${SHARE} ${bdir}
+  else
+    rsync -e "ssh -p ${PORT}" "${roption[@]}" ${USER}@${SERVER}:${SHARE} ${bdir}
+  fi
+
+  # If additional rsync commands exist
+  if declare -p rsyncadd >/dev/null 2>&1; then
+    rsyncsize=${#rsyncadd[@]}
+    for radd in "${rsyncadd[@]}"
+    do
+      eval ${radd}
+    done
+    return 0
+  fi
+
+}
+
+notify_success () {
+    echo -e "Subject: Backup Success with $sname on $HOSTNAME\n\n $(<${sdir}bac.log)" | $sendmail $mail
+}
+
+notify_failure () {
+    echo -e "Subject: Backup Error with $sname on $HOSTNAME\n\n $(<${sdir}err.log)" | $sendmail $mail
 }
 
 # Check if there already exists a backup process for the given server and PERIOD
@@ -193,11 +228,11 @@ avoid_duplicates_in_queue () {
 manage_queue () {
 
   # Manage queue - To avoid heavy loads
-	st=$(($stmax+1))
-	sti=1
+    st=$(($stmax+1))
+    sti=1
 
   while [ "$st" -ge "$stmax" ]
-	do
+    do
 
     # Check if SBE-queue-run exists. If not, backup should start immediately
     if [ -f ${reports}SBE-queue-run ]; then
@@ -233,12 +268,13 @@ manage_queue () {
       fi
 
     else
-	      st=$(($stmax-1))
+          st=$(($stmax-1))
     fi
 
-	done
+    done
 
 }
+
 
 write_to_queue () {
 
@@ -248,113 +284,60 @@ write_to_queue () {
 
 }
 
-# Notify admin user
-notify () {
-
-  [[ "$@" =~ "--log" ]] || echo -e "Subject: Backup Success with $sname on $HOSTNAME\n\n $(cat ${sdir}bac.log)" | $sendmail $mail
-
-  if [ $(cat ${sdir}err.log | wc -w | awk '{ print $1 }') -gt 0 ]; then
-    echo "Script stopped: $(date +"%y-%m-%d %H:%M")" >> ${sdir}err.log
-    echo -e "Subject: Backup Error with $sname on $HOSTNAME\n\n $(cat ${sdir}err.log)" | $sendmail $mail
-    exit 1
-  fi
-
-}
-
-
-
-# backup via rsync
-rsync_backup () {
-
-  # The --whole-file parameter deters the remote server to dismember files for network traffic
-  # Maybe this prevents the heavy loads on the server side
-  if [[ $WHOLEFILE -eq 1 ]]; then
-    rsync --whole-file -e "ssh -p ${PORT}" "${roption[@]}" ${USER}@${SERVER}:${SHARE} ${bdir}
-  else
-    rsync -e "ssh -p ${PORT}" "${roption[@]}" ${USER}@${SERVER}:${SHARE} ${bdir}
-  fi
-
-  # If additional rsync commands exist
-  if declare -p rsyncadd >/dev/null 2>&1; then
-    rsyncsize=${#rsyncadd[@]}
-    for radd in "${rsyncadd[@]}"
-    do
-      eval ${radd}
-    done
-    return 0
-  fi
-
-}
-
-# Backup to a network share
-share_backup () {
-  sudo mount.cifs //${SERVER}/${SHARE} -o username=${USER},password=''${PASS}'' ${sdir}mnt/
-  if sudo mount | grep ${sdir}mnt; then
-      rsync "${roption[@]}" ${sdir}mnt/ ${bdir}
-      sleep 5
-      if ! sudo umount ${sdir}mnt/; then
-        >&2 echo "Problem with unmounting filesystem"
-      else
-        echo "Successfully umounted device"
-      fi
-  fi
-}
 
 # MAIN
 
-if [[ $@ =~ "--sshCopy" ]]; then
+if [[ "$@" =~ "--set-code" ]]; then
 
-  [[ "$@" =~ "--log" ]] && echo "Copy ssh public key"
+    unique_code=$(generate_unique_code)
+    update_unique_code_files "$unique_code" || exit 1
+    echo "Unique code files created and updated successfully."
+    exit 0
 
-  ssh-copy-id -i ~/.ssh/id_rsa.pub -p $PORT $USER@$SERVER
+elif [[ "$@" =~ "--sshCopy" ]]; then
+    ssh-copy-id -i ~/.ssh/id_rsa.pub -p "$PORT" "$USER@$SERVER"
 
-elif [ $BACKUP -eq 1 ]; then
+elif [ "$BACKUP" -eq 1 ]; then
+    rm -f "${sdir}err.log" "${sdir}bac.log"
 
-  [[ "$@" =~ "--log" ]] && echo "Backup process started"
+    avoid_duplicates_in_queue || exit 2 && [[ "$@" =~ "--log" ]] && echo "Backup added to queue"
 
-  avoid_duplicates_in_queue || exit 2 && [[ "$@" =~ "--log" ]] && echo "Backup added to queue"
+    manage_queue && [[ "$@" =~ "--log" ]] && echo "Managed queue"
 
-  manage_queue && [[ "$@" =~ "--log" ]] && echo "Managed queue"
 
-  rm -f ${sdir}err.log
-  rm -f ${sdir}bac.log
+    (
+        echo "Starting Backup: $(date +"%y-%m-%d %H:%M")"
 
-  # Backup process
-  (
+        write_to_queue && [[ "$@" =~ "--log" ]] && echo "Added backup to queue"
+        
+        remote_server_up || { echo "Server is down"; exit 1; }
 
-    echo "Starting Backup: $(date +"%y-%m-%d %H:%M")"
+        fetch_remote_unique_code_file || { echo "Failed to fetch remote unique code file"; exit 1; }
 
-    write_to_queue && [[ "$@" =~ "--log" ]] && echo "Added backup to queue"
+        compare_unique_code_files
 
-    remote_server_up || exit 1 && [[ "$@" =~ "--log" ]] && echo "Server is up"
+        mount_backup_directory || exit 4 && [[ "$@" =~ "--log" ]] && echo "Backup directory mounted"
+        
+        create_backup_directory || { echo "Failed to create backup directory"; exit 1; }
+        
+        rsync_backup || { echo "Failed to perform rsync backup"; exit 1; }
+       
+        umount_backup_directory && [[ "$@" =~ "--log" ]] && echo "Backup directory unmounted" 
 
-    mount_backup_directory || exit 4 && [[ "$@" =~ "--log" ]] && echo "Backup directory mounted"
+        echo "Successful backup: $(date +"%y-%m-%d %H:%M")"
 
-    create_backup_directory || exit 5 && [[ "$@" =~ "--log" ]] && echo "Backup directory created"
+        sed -i "/^$cID;.*$/d" ${reports}SBE-queue-run
+        echo "$cID; ${START_DATE}; ${sname}; ${PERIOD}; $(date);" >> ${reports}SBE-done
 
-    echo "Backup from: ${USER}@${SERVER}:${SHARE}"
-    echo "Backup Directory: $bdir"
-    echo ""
+    ) >> ${sdir}bac.log | tee ${rdir}all.log 2> ${sdir}err.log | tee ${rdir}all.log
 
-    tc=0
-    [[ "$@" =~ "--log" ]] && echo "Starting backup type: $TYPE"
-    [[ $TYPE == "rsync" ]] && rsync_backup; tc=1
-    [[ $TYPE == "share" ]] && share_backup; tc=1
-    [ $tc -eq 1 ] || exit 3
-
-    umount_backup_directory && [[ "$@" =~ "--log" ]] && echo "Backup directory unmounted"
-
-    echo "Successfull backup: $(date +"%y-%m-%d %H:%M")"
-    sed -i "/^$cID;.*$/d" ${reports}SBE-queue-run
-
-    echo "$cID; ${START_DATE}; ${sname}; ${PERIOD}; $(date);" >> ${reports}SBE-done
-
-  ) >> ${sdir}bac.log | tee ${rdir}all.log 2> ${sdir}err.log | tee ${rdir}all.log
-
-  [[ "$@" =~ "--log" ]] && echo "Backup done"
-
-  notify; [[ "$@" =~ "--log" ]] && echo "Notify"
-
+    if [ -s "${sdir}err.log" ]; then
+        notify_failure
+        exit 1
+    else
+        notify_success
+        exit 0
+    fi
 fi
 
 exit 0
