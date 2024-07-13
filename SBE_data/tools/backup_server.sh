@@ -298,7 +298,6 @@ elif [[ "$@" =~ "--sshCopy" ]]; then
     ssh-copy-id -i ~/.ssh/id_rsa.pub -p "$PORT" "$USER@$SERVER"
 
 elif [ "$BACKUP" -eq 1 ]; then
-    rm -f "${sdir}err.log" "${sdir}bac.log"
 
     avoid_duplicates_in_queue || exit 2 && [[ "$@" =~ "--log" ]] && echo "Backup added to queue"
 
@@ -319,6 +318,8 @@ elif [ "$BACKUP" -eq 1 ]; then
         mount_backup_directory || exit 4 && [[ "$@" =~ "--log" ]] && echo "Backup directory mounted"
         
         create_backup_directory || { echo "Failed to create backup directory"; exit 1; }
+
+        rm -f "${sdir}err.log" "${sdir}bac.log"
         
         rsync_backup || { echo "Failed to perform rsync backup"; exit 1; }
        
