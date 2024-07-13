@@ -318,8 +318,6 @@ elif [ "$BACKUP" -eq 1 ]; then
         mount_backup_directory || exit 4 && [[ "$@" =~ "--log" ]] && echo "Backup directory mounted"
         
         create_backup_directory || { echo "Failed to create backup directory"; exit 1; }
-
-        rm -f "${sdir}err.log" "${sdir}bac.log"
         
         rsync_backup || { echo "Failed to perform rsync backup"; exit 1; }
        
@@ -331,6 +329,8 @@ elif [ "$BACKUP" -eq 1 ]; then
         echo "$cID; ${START_DATE}; ${sname}; ${PERIOD}; $(date);" >> ${reports}SBE-done
 
     ) >> ${sdir}bac.log | tee ${rdir}all.log 2> ${sdir}err.log | tee ${rdir}all.log
+
+    rm -f "${sdir}err.log" "${sdir}bac.log"
 
     if [ -s "${sdir}err.log" ]; then
         notify_failure
