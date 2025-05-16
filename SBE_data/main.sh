@@ -34,6 +34,16 @@ while :; do
         exit 1
     fi
 
+    # Ensure reports directory exists
+    if [ ! -d "$reports" ]; then
+        mkdir -p "$reports"
+        # Create empty queue files
+        touch "${reports}SBE-queue"
+        touch "${reports}SBE-queue-run"
+        touch "${reports}SBE-done"
+        echo "Created reports directory and initialized queue files."
+    fi
+
     if [ $overwriteRun -eq 0 ]; then
         echo "Clearing run queue"
         echo "" > ${reports}SBE-queue-run
