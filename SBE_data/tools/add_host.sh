@@ -35,7 +35,7 @@ non_interactive=0
 if [ "$1" == "--non-interactive" ]; then
   non_interactive=1
   shift
-  if [ $# -ge 6 ]; then
+  if [ $# -ge 5 ]; then
     sname="$1"
     bmaxsize="$2"
     suser="$3"
@@ -43,7 +43,7 @@ if [ "$1" == "--non-interactive" ]; then
     sport="$5"
     # Additional args can be processed as needed
   else
-    echo "Non-interactive mode requires at least 6 arguments:"
+    echo "Non-interactive mode requires at least 5 arguments:"
     echo "Usage: $0 --non-interactive [name] [size] [user] [server] [port] [--encrypted]"
     exit 1
   fi
@@ -169,6 +169,7 @@ mount_backup_directory () {
   mkdir -p ${bdir}.mounted/daily
   mkdir -p ${bdir}.mounted/weekly
   mkdir -p ${bdir}.mounted/monthly
+  mkdir -p ${bdir}.mounted/yearly
   mkdir -p ${bdir}.mounted/latest
 }
 
