@@ -28,16 +28,42 @@ suser=""
 sip=""
 # SSH port of the server
 sport=""
+# Non-interactive mode flag
+non_interactive=0
 
-[[ "$@" =~ "--encrypted" ]] && encrypted=1 ||  encrypted=0
-
+# Parse command line arguments for non-interactive mode
+if [ "$1" == "--non-interactive" ]; then
+  non_interactive=1
+  shift
+  if [ $# -ge 6 ]; then
+    sname="$1"
+    bmaxsize="$2"
+    suser="$3"
+    sip="$4"
+    sport="$5"
+    # Additional args can be processed as needed
+  else
+    echo "Non-interactive mode requires at least 6 arguments:"
+    echo "Usage: $0 --non-interactive [name] [size] [user] [server] [port] [--encrypted]"
+    exit 1
+  fi
+  if [[ "$6" == "--encrypted" ]]; then
+    encrypted=1
+  else
+    encrypted=0
+  fi
+else
+  [[ "$@" =~ "--encrypted" ]] && encrypted=1 ||  encrypted=0
+fi
 
 get_information () {
-  read -p "HostName (used as backup directory name): " sname
-  read -p "Backup max size (Format: 1000M or 1G): " bmaxsize
-  read -p "User: " suser
-  read -p "Server IP Adress: " sip
-  read -p "Server Port: " sport
+  if [ $non_interactive -eq 0 ]; then
+    read -p "HostName (used as backup directory name): " sname
+    read -p "Backup max size (Format: 1000M or 1G): " bmaxsize
+    read -p "User: " suser
+    read -p "Server IP Adress: " sip
+    read -p "Server Port: " sport
+  fi
 }
 
 show_information () {
@@ -53,13 +79,15 @@ show_information () {
 
 # Inform user how to configure ssh on the remote server
 open_ssh () {
-  echo
-  echo 'Change the /etc/ssh/sshd_config on your remote host'
-  echo ' - PermitRootLogin yes'
-  echo ' - PasswordAuthentication yes'
-  echo 'And restart the ssh service afterwards "service ssh restart"'
-  read -p 'Approve if done [Enter]'
-  echo ''
+  if [ $non_interactive -eq 0 ]; then
+    echo
+    echo 'Change the /etc/ssh/sshd_config on your remote host'
+    echo ' - PermitRootLogin yes'
+    echo ' - PasswordAuthentication yes'
+    echo 'And restart the ssh service afterwards "service ssh restart"'
+    read -p 'Approve if done [Enter]'
+    echo ''
+  fi
 }
 
 # Transfer SSH publick key
@@ -69,12 +97,14 @@ transfer_public_key () {
 
 # Inform user how to secure ssh on the remote server
 close_ssh () {
-  echo
-  echo 'Change the /etc/ssh/sshd_config back to secure'
-  echo ' - PermitRootLogin prohibit-password'
-  echo ' - PasswordAuthentication no'
-  echo 'And restart the ssh service again "service ssh restart"'
-  read -p 'Approve if done [Enter]'
+  if [ $non_interactive -eq 0 ]; then
+    echo
+    echo 'Change the /etc/ssh/sshd_config back to secure'
+    echo ' - PermitRootLogin prohibit-password'
+    echo ' - PasswordAuthentication no'
+    echo 'And restart the ssh service again "service ssh restart"'
+    read -p 'Approve if done [Enter]'
+  fi
 }
 
 # Encrypt and store passphrase
@@ -88,34 +118,76 @@ encrypt_backup_directory () {
 
 # Create filesystem with backup maximum size
 create_backup_directory () {
-
   bdir="${SBE_dir}${sname}/"
-  [[ -d $bdir ]] && echo "Backup directory exists already" && exit 2
+  
+  # Handle existing directory
+  if [[ -d $bdir ]]; then
+    echo "Backup directory exists already"
+    if [ $non_interactive -eq 1 ]; then
+      # In non-interactive mode, update the configuration
+      echo "Updating configuration for existing backup directory"
+      return 0
+    else
+      exit 2
+    fi
+  fi
 
   mkdir -p $bdir
-  mkdir ${bdir}.mounted
+  mkdir -p ${bdir}.mounted
   touch ${bdir}backups
   fallocate -l $bmaxsize ${bdir}backups
   [[ $encrypted -eq 1 ]] && encrypt_backup_directory || mkfs.ext4 ${bdir}backups
-
 }
 
 # Simply mount backup image
 mount_backup_directory () {
-  [[ $encrypted -eq 1 ]] && mount /dev/mapper/${sname}.mounted ${bdir}.mounted ||  mount ${bdir}backups ${bdir}.mounted
+  # Check if already mounted
+  if mount | grep "${bdir}.mounted" > /dev/null; then
+    echo "Backup directory is already mounted"
+    return 0
+  fi
+
+  if [[ $encrypted -eq 1 ]]; then
+    # Check if already opened
+    if [ -e "/dev/mapper/${sname}.mounted" ]; then
+      echo "LUKS device is already open"
+    else
+      if [ -f "${bdir}passphrase" ]; then
+        passphrase=$(cat ${bdir}passphrase)
+        echo -n "$passphrase" | cryptsetup luksOpen --type luks2 ${bdir}backups ${sname}.mounted
+      else
+        echo "Error: Passphrase file not found"
+        return 1
+      fi
+    fi
+    mount /dev/mapper/${sname}.mounted ${bdir}.mounted
+  else
+    mount ${bdir}backups ${bdir}.mounted
+  fi
+
+  # Create required directories
+  mkdir -p ${bdir}.mounted/daily
+  mkdir -p ${bdir}.mounted/weekly
+  mkdir -p ${bdir}.mounted/monthly
+  mkdir -p ${bdir}.mounted/latest
 }
 
 fill_backup_directory () {
+  # Only copy if files don't exist or are different
+  if [ ! -f "${bdir}server.config" ]; then
+    cp ${SBE_dir}tools/server.config ${bdir}
+  fi
+  
+  if [ ! -f "${bdir}backup_server.sh" ]; then
+    cp ${SBE_dir}tools/backup_server.sh ${bdir}
+  fi
 
-  rsync -a ${SBE_dir}tools/server.config    ${bdir}
-  rsync -a ${SBE_dir}tools/backup_server.sh ${bdir}
-
-  sed -i 's/!#Host#!/'$sname'/g'          ${bdir}server.config
-  sed -i 's/!#IPadress#!/'$sip'/g'        ${bdir}server.config
-  sed -i 's/!#Port#!/'$sport'/g'          ${bdir}server.config
-  sed -i 's/!#User#!/'$suser'/g'          ${bdir}server.config
+  # Always update configuration
+  sed -i 's/!#Host#!/'$sname'/g' ${bdir}server.config
+  sed -i 's/!#IPadress#!/'$sip'/g' ${bdir}server.config
+  sed -i 's/!#Port#!/'$sport'/g' ${bdir}server.config
+  sed -i 's/!#User#!/'$suser'/g' ${bdir}server.config
   sed -i "s/ENCRYPTED=.*/ENCRYPTED=${encrypted}/g" ${bdir}server.config
-
 }
 
 # MAIN
@@ -123,12 +195,19 @@ fill_backup_directory () {
 get_information
 
 show_information
-read -p 'Do you want to continue with this settings? (y/N): ' a
-[[ $a == [Yy] ]] || exit 1
+if [ $non_interactive -eq 0 ]; then
+  read -p 'Do you want to continue with this settings? (y/N): ' a
+  [[ $a == [Yy] ]] || exit 1
+fi
 
-
-read -p 'Transfer SSH pub key? (y/N): ' a
-if [[ $a == [Yy] ]]; then
+if [ $non_interactive -eq 0 ]; then
+  read -p 'Transfer SSH pub key? (y/N): ' a
+  if [[ $a == [Yy] ]]; then
+    open_ssh
+    transfer_public_key
+    close_ssh
+  fi
+elif [ "$7" == "--transfer-key" ]; then
   open_ssh
   transfer_public_key
   close_ssh
@@ -142,9 +221,15 @@ fill_backup_directory
 echo "..."
 echo "Configuration finished"
 
-
-read -p 'Shall I start the first backup process? (y/N): ' a
-if [[ $a == [Yy] ]]; then
+if [ $non_interactive -eq 0 ]; then
+  read -p 'Shall I start the first backup process? (y/N): ' a
+  if [[ $a == [Yy] ]]; then
+    echo "..."
+    echo "Starting first backup"
+    /bin/bash ${bdir}backup_server.sh &
+    echo "You can kill the process with - kill $!"
+  fi
+elif [ "$8" == "--run-backup" ]; then
   echo "..."
   echo "Starting first backup"
   /bin/bash ${bdir}backup_server.sh &
