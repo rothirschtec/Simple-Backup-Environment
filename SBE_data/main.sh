@@ -24,8 +24,6 @@ getlatest() {
 [[ $1 == "update" ]] && { getlatest; exit 0; }
 
 while :; do
-
-
     # Parse config
     if [ -f "${mdir}.env" ]; then
         source "${mdir}.env"
@@ -33,7 +31,7 @@ while :; do
         echo "You have to configure .env first. Copy from env.example to .env and configure it."
         exit 1
     fi
-
+    
     # Ensure reports directory exists
     if [ ! -d "$reports" ]; then
         mkdir -p "$reports"
@@ -79,6 +77,11 @@ while :; do
         while IFS= read -r line; do
             b_type+=("$line")
         done < <(grep -oP '(?<=<type>).*?(?=</type>)' "$backup_xml")
+        
+        b_retentions=()
+        while IFS= read -r line; do
+            b_retentions+=("$line")
+        done < <(grep -oP '(?<=<retention>).*?(?=</retention>)' "$backup_xml" 2>/dev/null || echo "")
     else
         message="backup.xml does not exist"
         echo "$message"
@@ -95,6 +98,14 @@ while :; do
         echo "Checking backup for: ${b_dirs[$x]}"
         echo "Intervall: ${b_invs[$x]}"
         echo "Date: ${b_dats[$x]}"
+        echo "Type: ${b_type[$x]}"
+        
+        # Set retention if available
+        retention=""
+        if [ -n "${b_retentions[$x]}" ]; then
+            retention="retention=${b_retentions[$x]}"
+            echo "Retention: ${b_retentions[$x]}"
+        fi
 
         if [[ $1 == "now" ]]; then
             dobackup=(1 1 1)
@@ -134,6 +145,9 @@ while :; do
 
             # Enhanced date matching logic
             case "${b_dats[$x]}" in
+                \*)  # Wildcard - match any day
+                    dobackup[1]=1
+                    ;;
                 [0-9]|[0-2][0-9]|3[0-1])  # Numeric day, e.g., "20"
                     b_dat=$(date +"%d") 
                     if ((10#$b_dat == 10#${b_dats[$x]})); then dobackup[1]=1; fi
@@ -143,8 +157,20 @@ while :; do
                     b_day_full=$(date +"%A")
                     if [[ ",${b_dats[$x]}," == *",$b_day_short,"* ]] || [[ ",${b_dats[$x]}," == *",$b_day_full,"* ]]; then dobackup[1]=1; fi
                     ;;
+                [A-Za-z][a-z][a-z]-[0-9]|[A-Z][a-z]*-[0-9]|[A-Z][a-z]*-[0-9][0-9])  # Month-Day format, e.g., "Jan-1" for yearly
+                    month_part=${b_dats[$x]%%-*}
+                    day_part=${b_dats[$x]##*-}
+                    current_month=$(date +"%b")
+                    current_month_full=$(date +"%B")
+                    current_day=$(date +"%d")
+                    current_day=$((10#$current_day)) # Strip leading zero
+                    
+                    if [[ "$month_part" == "$current_month" || "$month_part" == "$current_month_full" ]] && [[ $day_part -eq $current_day ]]; then
+                        dobackup[1]=1
+                    fi
+                    ;;
                 *)
-                    echo "Unknown configuration: ${b_dats[$x]}"
+                    echo "Unknown date configuration: ${b_dats[$x]}"
                     exit 1
                     ;;
             esac
@@ -152,14 +178,17 @@ while :; do
             if [ ${dobackup[1]} -ne 1 ]; then
                 [ $logs -eq 1 ] && echo "Not valid ${b_dats[$x]} =~ $b_dat/$b_day_short/$b_day_full"
             fi
-
         fi
 
         if [ ${dobackup[0]} -eq 1 ] && [ ${dobackup[1]} -eq 1 ]; then
             echo "Conditions met for backup: ${b_dirs[$x]}"
             if [ -f "${hdir}${b_dirs[$x]}/backup_server.sh" ]; then
                 echo "Backup ${b_dirs[$x]} started"
-                bash "${hdir}${b_dirs[$x]}/backup_server.sh" "--${b_type[$x]}" &
+                if [ -n "$retention" ]; then
+                    bash "${hdir}${b_dirs[$x]}/backup_server.sh" "--${b_type[$x]}" "$retention" &
+                else
+                    bash "${hdir}${b_dirs[$x]}/backup_server.sh" "--${b_type[$x]}" &
+                fi
                 message="Backup for ${b_dirs[$x]} under way..."
             else
                 message="Backup directory (${b_dirs[$x]}) doesn't exist"
