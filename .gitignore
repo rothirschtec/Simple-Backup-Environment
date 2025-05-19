@@ -19,6 +19,7 @@
 !backup/scripts/tools/
 !backup/scripts/tools/add_host.sh
 !backup/scripts/tools/backup_server.sh
+!backup/scripts/tools/backup_settings.sh
 !backup/scripts/tools/checker.sh
 !backup/scripts/tools/mount.sh
 !backup/scripts/tools/update_scripts.sh
