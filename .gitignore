@@ -1,30 +1,73 @@
-# Ignore everything
+# Ignore everything by default
 *
 
-# But not these files...
+# Track core repository files
 !.gitignore
-!main.sh
-!SBE_data
-!SBE_data/main.sh
-!SBE_data/status.sh
-!SBE_data/create_bac.sh
-!SBE_data/dist2server.sh
 !LICENSE
 !README.md
 !docker-compose.yml
-!msmtprc.example
-!env.example
-!SBE_docker
-!SBE_docker/Dockerfile
-# etc...
+!.env.example
+!setup_repo.sh
+!migrate.sh
 
-# ...even if they are in subdirectories
-#!*/
+# Backup Service files
+!backup/
+!backup/Dockerfile
+!backup/scripts/
+!backup/scripts/main.sh
+!backup/scripts/status.sh
+!backup/scripts/tools/
+!backup/scripts/tools/add_host.sh
+!backup/scripts/tools/backup_server.sh
+!backup/scripts/tools/checker.sh
+!backup/scripts/tools/mount.sh
+!backup/scripts/tools/update_scripts.sh
+!backup/scripts/tools/lib/
+!backup/scripts/tools/lib/mount.sh
+!backup/scripts/tools/lib/key_manager.sh
+!backup/config/
+!backup/config/msmtprc.example
+!backup/config/backup.xml-example
 
-# if the files to be tracked are in subdirectories
-#!*/a/b/file1.txt
-#!*/a/b/c/*
-!SBE_data/tools
-!SBE_data/tools/*
-!SBE_data/tools/lib
-!SBE_data/tools/lib/*
+# Key Server files
+!keyserver/
+!keyserver/Dockerfile
+!keyserver/app.py
+!keyserver/requirements.txt
+!keyserver/scripts/
+!keyserver/scripts/generate_certs.sh
+!keyserver/config/
+!keyserver/config/*.example
+
+# Documentation
+!docs/
+!docs/*.md
+
+# Explicitly ignore certain files and directories
+.env
+backup/config/msmtprc
+backup/.mounted/
+keyserver/config/certs/
+keyserver/data/
+*__pycache__/
+*.pyc
+*.pyo
+*.log
+*.bak
+*.swp
+*.tmp
+
+# Ignore generated config files
+backup/config/backup.xml
+
+# Ignore backup files/directories
+backup_*/
+*.backup
+*.old
+
+# Ignore PostgreSQL data
+postgres_data/
+
+# Ignore passphrase files
+**/passphrase
+**/passphrase.backup

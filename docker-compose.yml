@@ -1,24 +1,67 @@
 version: '3.5'
 services:
-
-  sbe:
-    build: SBE_docker
-    hostname: sbe.${domain}
-    container_name: sbe.${domain}
+  # Backup Service
+  sbe-backup:
+    build: ./backup
+    container_name: sbe.backup.${DOMAIN}
+    hostname: sbe.backup.${DOMAIN}
     restart: unless-stopped
     privileged: true
     volumes:
-      - ${sshdir}:/root/.ssh
-      - ./:/opt/SBE
-      - ${reports}:${reports}
-      - ${sbdir}:${sbdir}
-      - ./msmtprc:/etc/msmtprc
+      - ${SSH_DIR}:/root/.ssh
+      - ./backup/scripts:/opt/SBE
+      - ${REPORTS_DIR}:${REPORTS_DIR}
+      - ${SETTINGS_DIR}:${SETTINGS_DIR}
+      - ./backup/config/msmtprc:/etc/msmtprc
       - /etc/localtime:/etc/localtime:ro
+    environment:
+      - KEYSERVER_HOST=${KEYSERVER_HOST}
+      - KEYSERVER_API_KEY=${KEYSERVER_API_KEY}
     networks:
-      - debian-net
+      - backup-net
+    depends_on:
+      - sbe-keyserver
+
+  # Key Server Service
+  sbe-keyserver:
+    build: ./keyserver
+    container_name: sbe.keyserver.${DOMAIN}
+    hostname: sbe.keyserver.${DOMAIN}
+    restart: unless-stopped
+    environment:
+      - API_KEY=${KEYSERVER_API_KEY}
+      - POSTGRES_USER=${POSTGRES_USER}
+      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
+      - POSTGRES_DB=${POSTGRES_DB}
+    volumes:
+      - keyserver-data:/data
+      - ./keyserver/config/certs:/app/config/certs
+      - /etc/localtime:/etc/localtime:ro
+    ports:
+      - "${KEYSERVER_PORT}:8443"
+    networks:
+      - backup-net
+    depends_on:
+      - sbe-keyserver-db
+
+  # Key Server Database
+  sbe-keyserver-db:
+    image: postgres:14-alpine
+    container_name: sbe.keyserver.db.${DOMAIN}
+    restart: unless-stopped
+    environment:
+      - POSTGRES_USER=${POSTGRES_USER}
+      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
+      - POSTGRES_DB=${POSTGRES_DB}
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+    networks:
+      - backup-net
 
 networks:
-  debian-net:
-    ipam:
-      config:
-        - subnet: 172.23.${SUBNET}.0/24
+  backup-net:
+    driver: bridge
+
+volumes:
+  postgres-data:
+  keyserver-data:
