@@ -22,9 +22,7 @@
 !backup/tools/lib/*.py
 !backup/config/
 !backup/config/msmtprc.example
-!backup/config/backup.xml-example
-!backup/config/backup.yaml
-!backup/config/backup.xsd
+!backup/config/backup-example.yaml
 !backup/**/__init__.py
 
 # Backup Service files (Shell version - maintain compatibility)
