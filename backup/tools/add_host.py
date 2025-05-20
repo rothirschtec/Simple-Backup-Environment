@@ -157,7 +157,10 @@ class HostManager:
         else:
             # Set base directory to the SBE root (3 levels up from this script)
             self.base_dir = Path(__file__).resolve().parent.parent.parent
-        
+
+        # Directory where backups are stored
+        self.store_dir = self.base_dir / "store"
+
         self.config = ConfigManager(str(self.base_dir))
         self.key_manager = KeyManager()
         self.mounter = BackupMounter(str(self.base_dir))
@@ -187,7 +190,7 @@ class HostManager:
             Tuple of (success, message)
         """
         # Set paths
-        backup_dir = self.base_dir / "backup" / hostname
+        backup_dir = self.store_dir / hostname
         mounted_dir = backup_dir / ".mounted"
         backup_img = backup_dir / "backups"
         
@@ -487,9 +490,9 @@ class HostManager:
         try:
             # Use universal backup script in the tools directory
             universal_script = self.base_dir / "backup" / "tools" / "backup_server.py"
-            
+
             # Create command wrapper script
-            wrapper_script = self.base_dir / "backup" / hostname / "backup_server.py"
+            wrapper_script = self.store_dir / hostname / "backup_server.py"
             
             # Create the wrapper script content
             wrapper_content = f'''#!/bin/bash

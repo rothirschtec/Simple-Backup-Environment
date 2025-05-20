@@ -40,7 +40,10 @@ class BackupScheduler:
         else:
             # Set base directory to the SBE root (2 levels up from this script)
             self.base_dir = Path(__file__).resolve().parent.parent
-        
+
+        # Directory where actual backups are stored
+        self.store_dir = self.base_dir / "store"
+
         self.config = ConfigManager(str(self.base_dir))
         self.running = False
         self.backups_running = set()
@@ -313,7 +316,7 @@ class BackupScheduler:
             retention: Retention period in days
         """
         # Check if backup directory exists
-        backup_dir = self.base_dir / "backup" / directory
+        backup_dir = self.store_dir / directory
         
         if not backup_dir.exists():
             logger.error(f"Backup directory {backup_dir} doesn't exist")

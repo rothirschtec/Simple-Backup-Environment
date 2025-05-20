@@ -60,6 +60,7 @@ backup/config/msmtprc
 backup/.mounted/
 keyserver/config/certs/
 keyserver/data/
+store/
 *__pycache__/
 *.pyc
 *.pyo

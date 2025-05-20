@@ -61,7 +61,10 @@ class BackupMounter:
         else:
             # Set base directory to the SBE root (3 levels up from this script)
             self.base_dir = Path(__file__).resolve().parent.parent.parent
-        
+
+        # Directory where backups are stored
+        self.store_dir = self.base_dir / "store"
+
         self.config = ConfigManager(str(self.base_dir))
         self.key_manager = KeyManager()
     
@@ -80,7 +83,7 @@ class BackupMounter:
             return False, f"Failed to load configuration for {server_name}"
         
         # Set paths
-        server_dir = self.base_dir / "backup" / server_name
+        server_dir = self.store_dir / server_name
         backup_img = server_dir / "backups"
         mount_dir = server_dir / ".mounted"
         
@@ -167,7 +170,7 @@ class BackupMounter:
             return False, f"Failed to load configuration for {server_name}"
         
         # Set paths
-        server_dir = self.base_dir / "backup" / server_name
+        server_dir = self.store_dir / server_name
         mount_dir = server_dir / ".mounted"
         
         # Check if mounted
@@ -212,7 +215,7 @@ class BackupMounter:
             Tuple of (success, message)
         """
         # Set paths
-        server_dir = self.base_dir / "backup" / server_name
+        server_dir = self.store_dir / server_name
         mount_dir = server_dir / ".mounted"
         
         # Check if mounted

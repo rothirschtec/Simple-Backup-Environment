@@ -19,7 +19,7 @@ class OpenLuksDeviceTest(unittest.TestCase):
     def test_existing_mapper_generates_unique_name(self):
         tmp = tempfile.TemporaryDirectory()
         base_dir = Path(tmp.name)
-        server_dir = base_dir / "backup" / "srv"
+        server_dir = base_dir / "store" / "srv"
         server_dir.mkdir(parents=True)
         device = server_dir / "backups"
         device.touch()
@@ -66,7 +66,7 @@ class MountDirectoryTest(unittest.TestCase):
     def test_mount_uses_device_name_file(self):
         tmp = tempfile.TemporaryDirectory()
         base_dir = Path(tmp.name)
-        server_dir = base_dir / "backup" / "srv"
+        server_dir = base_dir / "store" / "srv"
         server_dir.mkdir(parents=True)
 
         # minimal config
