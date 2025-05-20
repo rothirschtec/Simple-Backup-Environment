@@ -19,16 +19,27 @@ class KeyManager:
             keyserver_host: URL of the key server
             api_key: API key for authentication
         """
-        self.keyserver_host = keyserver_host or os.environ.get(
-            "KEYSERVER_HOST", "https://sbe.keyserver.your.domain:8443"
-        )
-        self.api_key = api_key or os.environ.get(
-            "KEYSERVER_API_KEY", "your_api_key_here"
-        )
+        # Get keyserver host from environment or argument
+        self.keyserver_host = keyserver_host or os.environ.get("KEYSERVER_HOST", None)
+        
+        # Fix environment variable interpolation issues
+        if self.keyserver_host and "${" in self.keyserver_host:
+            # If we detect an unresolved variable, try to get the domain from environment
+            domain = os.environ.get("DOMAIN", "example.com")
+            self.keyserver_host = self.keyserver_host.replace("${DOMAIN}", domain)
+        
+        # If still not set, use default
+        if not self.keyserver_host:
+            self.keyserver_host = "https://sbe.keyserver.your.domain:8443"
+        
+        # Get API key
+        self.api_key = api_key or os.environ.get("KEYSERVER_API_KEY", "your_api_key_here")
         
         # Strip trailing slash from keyserver_host if present
         if self.keyserver_host.endswith("/"):
             self.keyserver_host = self.keyserver_host[:-1]
+            
+        logger.info(f"KeyManager initialized with keyserver: {self.keyserver_host}")
     
     def store_encryption_key(self, hostname: str, encryption_key: str) -> Tuple[bool, str]:
         """Store an encryption key in the key server
@@ -56,7 +67,7 @@ class KeyManager:
                     "Authorization": f"Bearer {self.api_key}"
                 },
                 json=payload,
-                verify=True  # Set to False for self-signed certs in dev
+                verify=False  # Set to False for self-signed certs in dev
             )
             
             # Check response
@@ -93,7 +104,7 @@ class KeyManager:
             response = requests.get(
                 f"{self.keyserver_host}/api/keys/{hostname}",
                 headers={"Authorization": f"Bearer {self.api_key}"},
-                verify=True  # Set to False for self-signed certs in dev
+                verify=False  # Set to False for self-signed certs in dev
             )
             
             # Check response
@@ -137,7 +148,7 @@ class KeyManager:
             response = requests.delete(
                 f"{self.keyserver_host}/api/keys/{hostname}",
                 headers={"Authorization": f"Bearer {self.api_key}"},
-                verify=True  # Set to False for self-signed certs in dev
+                verify=False  # Set to False for self-signed certs in dev
             )
             
             # Check response
@@ -163,10 +174,14 @@ class KeyManager:
             Tuple of (success, message)
         """
         try:
+            # Log the URL we're about to connect to
+            logger.info(f"Checking keyserver health at {self.keyserver_host}/health")
+            
             # Send request to key server health endpoint
             response = requests.get(
                 f"{self.keyserver_host}/health",
-                verify=True  # Set to False for self-signed certs in dev
+                verify=False,  # Set to False for self-signed certs in dev
+                timeout=5     # Add a timeout to avoid hanging
             )
             
             # Check response
@@ -246,12 +261,11 @@ class KeyManager:
         # Determine backup location
         if backup_dir:
             backup_path = Path(backup_dir) / "passphrase.backup"
+            alt_backup_path = Path(backup_dir) / "passphrase"
         else:
             # Assuming standard SBE structure
             base_dir = Path(__file__).resolve().parent.parent.parent.parent
             backup_path = base_dir / "backup" / hostname / "passphrase.backup"
-            
-            # Also check regular passphrase file
             alt_backup_path = base_dir / "backup" / hostname / "passphrase"
         
         # Try backup file
@@ -260,7 +274,7 @@ class KeyManager:
                 with open(backup_path, "r") as backup_file:
                     key = backup_file.read().strip()
                 return True, key
-            elif 'alt_backup_path' in locals() and alt_backup_path.exists():
+            elif alt_backup_path.exists():
                 with open(alt_backup_path, "r") as backup_file:
                     key = backup_file.read().strip()
                 return True, key

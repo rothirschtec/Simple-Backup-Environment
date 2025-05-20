@@ -6,6 +6,7 @@ import logging
 import argparse
 import secrets
 import subprocess
+import hashlib
 from pathlib import Path
 from typing import Dict, Any, Optional, Tuple
 
@@ -22,9 +23,125 @@ try:
     from lib.config import ConfigManager
     from lib.mount import BackupMounter
 except ImportError:
-    from backup.tools.lib.key_manager import KeyManager
-    from backup.tools.lib.config import ConfigManager
-    from backup.tools.lib.mount import BackupMounter
+    try:
+        from backup.tools.lib.key_manager import KeyManager
+        from backup.tools.lib.config import ConfigManager
+        from backup.tools.lib.mount import BackupMounter
+    except ImportError:
+        logger.error("Could not import required modules. Make sure you're running this script from the correct directory.")
+        sys.exit(1)
+
+def check_and_clean_existing_device(name: str) -> bool:
+    """
+    Check if a LUKS device already exists and try to clean it up
+    
+    Args:
+        name: Device name
+        
+    Returns:
+        True if device was cleaned or doesn't exist, False if couldn't clean
+    """
+    device_path = f"/dev/mapper/{name}"
+    
+    # Check if device exists
+    if os.path.exists(device_path):
+        logger.info(f"LUKS device {name} already exists, attempting to clean up")
+        
+        # Try to get info about the device
+        try:
+            result = subprocess.run(
+                ["dmsetup", "info", name],
+                capture_output=True,
+                text=True
+            )
+            logger.info(f"Device info: {result.stdout}")
+        except Exception as e:
+            logger.warning(f"Failed to get device info: {str(e)}")
+        
+        # Try to close the device
+        try:
+            # First see if it's mounted
+            result = subprocess.run(
+                ["findmnt", device_path],
+                capture_output=True,
+                text=True
+            )
+            
+            if result.returncode == 0:
+                # It's mounted, try to unmount
+                logger.info("Device is mounted, attempting to unmount")
+                umount_result = subprocess.run(
+                    ["umount", device_path],
+                    capture_output=True,
+                    text=True
+                )
+                if umount_result.returncode != 0:
+                    logger.error(f"Failed to unmount device: {umount_result.stderr}")
+            
+            # Now try to close the LUKS container
+            close_result = subprocess.run(
+                ["cryptsetup", "luksClose", name],
+                capture_output=True,
+                text=True
+            )
+            
+            if close_result.returncode != 0:
+                logger.error(f"Failed to close LUKS device: {close_result.stderr}")
+                
+                # Try with dmsetup
+                logger.info("Trying dmsetup to remove device")
+                dmsetup_result = subprocess.run(
+                    ["dmsetup", "remove", name],
+                    capture_output=True,
+                    text=True
+                )
+                
+                if dmsetup_result.returncode != 0:
+                    logger.error(f"Failed to remove device with dmsetup: {dmsetup_result.stderr}")
+                    
+                    # Final attempt with force flag
+                    force_result = subprocess.run(
+                        ["dmsetup", "remove", "-f", name],
+                        capture_output=True,
+                        text=True
+                    )
+                    
+                    if force_result.returncode != 0:
+                        logger.error(f"Failed to force remove device: {force_result.stderr}")
+                        print("\nERROR: Unable to clean up existing LUKS device.")
+                        print(f"The device '{name}' already exists and could not be removed.")
+                        print("This is likely because it's still in use by another process.")
+                        print("\nPossible solutions:")
+                        print("1. Try a different hostname")
+                        print("2. Reboot the container to release all device mappings")
+                        print("3. Check for any processes using the device: 'lsof | grep mapper'")
+                        return False
+            
+            logger.info("Successfully cleaned up existing LUKS device")
+            return True
+            
+        except Exception as e:
+            logger.error(f"Error cleaning up device: {str(e)}")
+            return False
+    
+    # Device doesn't exist, no cleanup needed
+    return True
+
+def generate_unique_device_name(hostname: str) -> str:
+    """
+    Generate a unique device name that won't conflict with existing mapper entries
+    
+    Args:
+        hostname: Original hostname
+        
+    Returns:
+        Unique device name
+    """
+    # Create a hash of the hostname to ensure uniqueness
+    h = hashlib.md5(hostname.encode()).hexdigest()[:8]
+    
+    # Use a prefix that's unlikely to conflict with other device mapper entries
+    return f"sbe_{h}_mapper"
 
 class HostManager:
     """Manages server hosts for SBE backups"""
@@ -74,80 +191,113 @@ class HostManager:
         mounted_dir = backup_dir / ".mounted"
         backup_img = backup_dir / "backups"
         
-        # Check if directory already exists
+        # Generate a unique device name to avoid conflicts
+        device_name = generate_unique_device_name(hostname)
+        
+        # Start fresh - if directory exists, completely remove it
         if backup_dir.exists():
-            # If it exists, we'll update the configuration
-            logger.info(f"Backup directory for {hostname} already exists, updating configuration")
-        else:
-            # Create backup directory
-            backup_dir.mkdir(parents=True, exist_ok=True)
-            mounted_dir.mkdir(parents=True, exist_ok=True)
-            
-            # Create backup image file
+            logger.info(f"Removing existing backup directory for {hostname} to ensure clean state")
             try:
-                logger.info(f"Creating backup image of size {max_size}")
-                result = subprocess.run(
-                    ["fallocate", "-l", max_size, str(backup_img)],
-                    capture_output=True,
-                    text=True
-                )
+                # First make sure nothing is mounted
+                if self._is_mounted(mounted_dir):
+                    logger.info(f"Unmounting {mounted_dir}")
+                    subprocess.run(["umount", str(mounted_dir)], capture_output=True)
                 
-                if result.returncode != 0:
-                    return False, f"Failed to create backup image: {result.stderr}"
+                # If encrypted, make sure the mapper device is closed
+                if os.path.exists(f"/dev/mapper/{device_name}"):
+                    logger.info(f"Closing LUKS device {device_name}")
+                    subprocess.run(["cryptsetup", "luksClose", device_name], capture_output=True)
+                    
+                    # If still exists, try force removing
+                    if os.path.exists(f"/dev/mapper/{device_name}"):
+                        logger.info("Using dmsetup to force remove")
+                        subprocess.run(["dmsetup", "remove", "-f", device_name], capture_output=True)
+                
+                # Now remove the directory
+                import shutil
+                shutil.rmtree(backup_dir)
+                logger.info(f"Successfully removed {backup_dir}")
             except Exception as e:
-                return False, f"Error creating backup image: {str(e)}"
+                logger.error(f"Error cleaning up existing directory: {e}")
+                # Continue anyway, we'll try to work with what we have
+        
+        # Create backup directory fresh
+        backup_dir.mkdir(parents=True, exist_ok=True)
+        mounted_dir.mkdir(parents=True, exist_ok=True)
+        
+        # Create backup image file
+        try:
+            logger.info(f"Creating backup image of size {max_size}")
+            result = subprocess.run(
+                ["fallocate", "-l", max_size, str(backup_img)],
+                capture_output=True,
+                text=True
+            )
             
-            # If encrypted, set up LUKS encryption
-            if encrypted:
-                passphrase = self._generate_passphrase()
-                logger.info("Encrypting backup image")
-                
-                success, message = self._encrypt_backup_image(str(backup_img), passphrase, hostname)
-                if not success:
-                    return False, message
-                
-                # Store passphrase both locally and in key server
-                with open(backup_dir / "passphrase", "w") as f:
-                    f.write(passphrase)
-                
-                # Try to store in key server if available
-                health_ok, _ = self.key_manager.check_keyserver_health()
-                if health_ok:
-                    success, message = self.key_manager.store_encryption_key(hostname, passphrase)
-                    if success:
-                        # Mark that this host uses the key server
-                        (backup_dir / ".use_keyserver").touch()
-                        
-                        # Backup locally as fallback
-                        self.key_manager.backup_key_locally(hostname, passphrase, str(backup_dir))
-                    else:
-                        logger.warning(f"Key server unavailable: {message}")
-                        logger.info("Using local passphrase file only")
+            if result.returncode != 0:
+                return False, f"Failed to create backup image: {result.stderr}"
+        except Exception as e:
+            return False, f"Error creating backup image: {str(e)}"
+        
+        # If encrypted, set up LUKS encryption
+        if encrypted:
+            passphrase = self._generate_passphrase()
+            logger.info("Encrypting backup image")
+            
+            success, message = self._encrypt_backup_image(str(backup_img), passphrase, device_name)
+            if not success:
+                return False, message
+            
+            # Store passphrase both locally and in key server
+            with open(backup_dir / "passphrase", "w") as f:
+                f.write(passphrase)
+            
+            # Store the device name
+            with open(backup_dir / "device_name", "w") as f:
+                f.write(device_name)
+            
+            # Always try to store in key server first
+            logger.info("Attempting to store encryption key in key server")
+            health_ok, health_msg = self.key_manager.check_keyserver_health()
+            if health_ok:
+                success, message = self.key_manager.store_encryption_key(hostname, passphrase)
+                if success:
+                    # Mark that this host uses the key server
+                    (backup_dir / ".use_keyserver").touch()
+                    logger.info("Key stored in key server and marked for keyserver use")
+                    
+                    # Backup locally as fallback
+                    self.key_manager.backup_key_locally(hostname, passphrase, str(backup_dir))
+                    logger.info("Key backed up locally as fallback")
                 else:
-                    logger.warning("Key server unavailable, using local passphrase file only")
-                
-                # Format the device
-                result = subprocess.run(
-                    ["mkfs.ext4", f"/dev/mapper/{hostname}.mounted"],
-                    capture_output=True,
-                    text=True
-                )
-                
-                if result.returncode != 0:
-                    return False, f"Failed to format encrypted device: {result.stderr}"
-                
-                # Close the device for now
-                self.mounter._close_luks_device(f"{hostname}.mounted")
+                    logger.warning(f"Key server unavailable: {message}")
+                    logger.info("Using local passphrase file only")
             else:
-                # Format as ext4 directly
-                result = subprocess.run(
-                    ["mkfs.ext4", str(backup_img)],
-                    capture_output=True,
-                    text=True
-                )
-                
-                if result.returncode != 0:
-                    return False, f"Failed to format backup image: {result.stderr}"
+                logger.warning(f"Key server health check failed: {health_msg}")
+                logger.info("Using local passphrase file only")
+            
+            # Format the device
+            result = subprocess.run(
+                ["mkfs.ext4", f"/dev/mapper/{device_name}"],
+                capture_output=True,
+                text=True
+            )
+            
+            if result.returncode != 0:
+                return False, f"Failed to format encrypted device: {result.stderr}"
+            
+            # Close the device for now
+            self.mounter._close_luks_device(device_name)
+        else:
+            # Format as ext4 directly
+            result = subprocess.run(
+                ["mkfs.ext4", str(backup_img)],
+                capture_output=True,
+                text=True
+            )
+            
+            if result.returncode != 0:
+                return False, f"Failed to format backup image: {result.stderr}"
         
         # Prepare server configuration
         server_config = {
@@ -163,6 +313,10 @@ class HostManager:
             "BYEARS": "5",  # Default retention: 5 years
             "MBAST": "2",  # Default max simultaneous backups
         }
+        
+        # Store the device name in the config if encrypted
+        if encrypted:
+            server_config["DEVICE_NAME"] = device_name
         
         # Save server configuration
         success = self.config.save_server_config(hostname, server_config)
@@ -189,16 +343,50 @@ class HostManager:
         if run_backup:
             logger.info("Starting initial backup")
             try:
-                subprocess.Popen(
-                    ["bash", str(backup_dir / "backup_server.sh")],
-                    stdout=subprocess.PIPE,
-                    stderr=subprocess.PIPE
-                )
-                logger.info("Backup started in background")
+                # First check for the Python version, then fall back to shell
+                backup_py = backup_dir / "backup_server.py"
+                backup_sh = backup_dir / "backup_server.sh"
+                
+                if backup_py.exists():
+                    subprocess.Popen(
+                        ["python3", str(backup_py)],
+                        stdout=subprocess.PIPE,
+                        stderr=subprocess.PIPE
+                    )
+                    logger.info("Python backup script started in background")
+                elif backup_sh.exists():
+                    subprocess.Popen(
+                        ["bash", str(backup_sh)],
+                        stdout=subprocess.PIPE,
+                        stderr=subprocess.PIPE
+                    )
+                    logger.info("Shell backup script started in background")
+                else:
+                    logger.warning("Could not find backup script to run")
             except Exception as e:
                 logger.error(f"Failed to start backup: {str(e)}")
         
         return True, f"Host {hostname} added successfully"
+
+    def _is_mounted(self, mount_point: Path) -> bool:
+        """Check if a directory is a mount point
+        
+        Args:
+            mount_point: Path to check
+            
+        Returns:
+            True if mounted, False otherwise
+        """
+        try:
+            result = subprocess.run(
+                ["findmnt", str(mount_point)], 
+                capture_output=True, 
+                text=True
+            )
+            return result.returncode == 0
+        except Exception as e:
+            logger.error(f"Error checking mount status: {str(e)}")
+            return False
     
     def _generate_passphrase(self) -> str:
         """Generate a secure random passphrase
@@ -222,54 +410,106 @@ class HostManager:
         # Fallback to secrets module
         return secrets.token_hex(16)
     
-    def _encrypt_backup_image(self, image_path: str, passphrase: str, name: str) -> Tuple[bool, str]:
-        """Encrypt a backup image using LUKS
+    def _encrypt_backup_image(self, image_path: str, passphrase: str, device_name: str) -> Tuple[bool, str]:
+        """Encrypt a backup image using LUKS with robust error handling
         
         Args:
             image_path: Path to backup image
             passphrase: Encryption passphrase
-            name: Name to use for mapped device
+            device_name: Name to use for mapped device
             
         Returns:
             Tuple of (success, message)
         """
+        # First check if the device already exists and forcibly remove it
+        mapper_path = f"/dev/mapper/{device_name}"
+        
+        # Always try to forcibly clean up any existing device first
+        if os.path.exists(mapper_path):
+            logger.info(f"Removing existing device: {mapper_path}")
+            
+            # First try to unmount if mounted
+            try:
+                subprocess.run(
+                    ["umount", mapper_path],
+                    stdout=subprocess.DEVNULL,
+                    stderr=subprocess.DEVNULL
+                )
+            except Exception:
+                pass
+                
+            # Try to close with cryptsetup
+            try:
+                subprocess.run(
+                    ["cryptsetup", "luksClose", device_name],
+                    stdout=subprocess.DEVNULL,
+                    stderr=subprocess.DEVNULL
+                )
+            except Exception:
+                pass
+                
+            # If still exists, try dmsetup force remove
+            if os.path.exists(mapper_path):
+                try:
+                    subprocess.run(
+                        ["dmsetup", "remove", "-f", device_name],
+                        stdout=subprocess.DEVNULL,
+                        stderr=subprocess.DEVNULL
+                    )
+                except Exception:
+                    pass
+        
+        # If we still have an existing device, let's use a different name
+        if os.path.exists(mapper_path):
+            return False, "Cannot create LUKS device - all attempts failed. Try rebooting the container."
+        
         try:
-            # Format with LUKS
-            process = subprocess.Popen(
-                ["echo", "-n", passphrase],
-                stdout=subprocess.PIPE
-            )
+            # Format with LUKS - be more explicit about parameters to avoid prompts
+            logger.info(f"Formatting {image_path} with LUKS")
+            format_cmd = [
+                "cryptsetup", 
+                "-q",  # Quiet mode, no questions
+                "-y",  # Verify passphrase
+                "--type", "luks2", 
+                "--batch-mode",  # For non-interactive use
+                "luksFormat", 
+                image_path
+            ]
             
-            result = subprocess.run(
-                ["cryptsetup", "-y", "luksFormat", "--type", "luks2", image_path],
-                stdin=process.stdout,
-                capture_output=True,
-                text=True
-            )
+            # Use a proper pipe for the passphrase
+            format_process = subprocess.Popen(format_cmd, stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+            format_stdout, format_stderr = format_process.communicate(input=passphrase.encode())
             
-            if result.returncode != 0:
-                return False, f"Failed to format with LUKS: {result.stderr}"
+            if format_process.returncode != 0:
+                return False, f"Failed to format with LUKS: {format_stderr.decode()}"
             
             # Open with LUKS
-            process = subprocess.Popen(
-                ["echo", "-n", passphrase],
-                stdout=subprocess.PIPE
-            )
+            logger.info(f"Opening LUKS device as {device_name}")
+            open_cmd = [
+                "cryptsetup", 
+                "--type", "luks2",
+                "--batch-mode",  # For non-interactive use
+                "luksOpen", 
+                image_path, 
+                device_name
+            ]
             
-            result = subprocess.run(
-                ["cryptsetup", "luksOpen", "--type", "luks2", image_path, f"{name}.mounted"],
-                stdin=process.stdout,
-                capture_output=True,
-                text=True
-            )
+            # Use another pipe for the passphrase
+            open_process = subprocess.Popen(open_cmd, stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+            open_stdout, open_stderr = open_process.communicate(input=passphrase.encode())
             
-            if result.returncode != 0:
-                return False, f"Failed to open LUKS device: {result.stderr}"
+            if open_process.returncode != 0:
+                error_msg = open_stderr.decode()
+                logger.error(f"Failed to open LUKS device: {error_msg}")
+                return False, f"Failed to open LUKS device: {error_msg}"
             
             return True, "Backup image encrypted successfully"
+            
         except Exception as e:
-            return False, f"Error encrypting backup image: {str(e)}"
-    
+            error_msg = str(e)
+            logger.error(f"Error during LUKS encryption: {error_msg}")
+            return False, f"Error encrypting backup image: {error_msg}"
+        
     def _copy_backup_script(self, hostname: str) -> bool:
         """Copy the backup script to the server directory
         
@@ -280,14 +520,26 @@ class HostManager:
             True if successful, False otherwise
         """
         try:
-            source = self.base_dir / "backup" / "tools" / "backup_server.sh"
-            destination = self.base_dir / "backup" / hostname / "backup_server.sh"
-            
-            # If Python version exists, use that instead
-            py_source = self.base_dir / "backup" / "tools" / "backup_server.py"
+            # Try to find the backup script - first in Python, then in shell
+            # First check in the direct backup directory
+            py_source = self.base_dir / "backup" / "backup_server.py"
             if py_source.exists():
-                destination = destination.with_suffix(".py")
                 source = py_source
+                destination = self.base_dir / "backup" / hostname / "backup_server.py"
+            else:
+                # Check in the tools directory
+                py_source = self.base_dir / "backup" / "tools" / "backup_server.py"
+                if py_source.exists():
+                    source = py_source
+                    destination = self.base_dir / "backup" / hostname / "backup_server.py"
+                else:
+                    # Fall back to shell script
+                    source = self.base_dir / "backup" / "scripts" / "tools" / "backup_server.sh"
+                    destination = self.base_dir / "backup" / hostname / "backup_server.sh"
+                    
+                    # If not in scripts dir, check tools dir
+                    if not source.exists():
+                        source = self.base_dir / "backup" / "tools" / "backup_server.sh"
             
             if source.exists():
                 # Copy file
@@ -300,9 +552,10 @@ class HostManager:
                 # Make executable
                 os.chmod(destination, 0o755)
                 
+                logger.info(f"Copied backup script from {source} to {destination}")
                 return True
             else:
-                logger.error(f"Backup script not found at {source}")
+                logger.error(f"Backup script not found at any of the expected locations")
                 return False
         except Exception as e:
             logger.error(f"Error copying backup script: {str(e)}")

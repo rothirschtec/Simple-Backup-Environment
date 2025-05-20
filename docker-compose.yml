@@ -1,22 +1,29 @@
-version: '3.5'
 services:
   # Backup Service
   sbe-backup:
-    build: ./backup
-    container_name: sbe.backup.${DOMAIN}
-    hostname: sbe.backup.${DOMAIN}
+    build:
+      context: .
+      dockerfile: ./backup/Dockerfile
+    image: sbe-backup:${DOMAIN:-example}
+    container_name: sbe.backup.${DOMAIN:-example.com}
+    hostname: sbe.backup.${DOMAIN:-example.com}
     restart: unless-stopped
     privileged: true
     volumes:
-      - ${SSH_DIR}:/root/.ssh
-      - ./backup/scripts:/opt/SBE
-      - ${REPORTS_DIR}:${REPORTS_DIR}
-      - ${SETTINGS_DIR}:${SETTINGS_DIR}
+      - ${SSH_DIR:-~/.ssh}:/root/.ssh
+      - ./:/opt/SBE
+      - ${REPORTS_DIR:-/var/SBE/reports}:${REPORTS_DIR:-/var/SBE/reports}
+      - ${SETTINGS_DIR:-/var/SBE/settings}:${SETTINGS_DIR:-/var/SBE/settings}
       - ./backup/config/msmtprc:/etc/msmtprc
       - /etc/localtime:/etc/localtime:ro
     environment:
-      - KEYSERVER_HOST=${KEYSERVER_HOST}
-      - KEYSERVER_API_KEY=${KEYSERVER_API_KEY}
+      - KEYSERVER_HOST=${KEYSERVER_HOST:-https://sbe.keyserver.example.com:8443}
+      - KEYSERVER_API_KEY=${KEYSERVER_API_KEY:-changeme}
+      - REPORTS_DIR=${REPORTS_DIR:-/var/SBE/reports}
+      - SETTINGS_DIR=${SETTINGS_DIR:-/var/SBE/settings}
+      - MAIL_RECIPIENT=${MAIL_RECIPIENT:-admin}
+      - MAX_SIMULTANEOUS_BACKUPS=${MAX_SIMULTANEOUS_BACKUPS:-2}
+      - DOMAIN=${DOMAIN:-example.com}
     networks:
       - backup-net
     depends_on:
@@ -25,20 +32,22 @@ services:
   # Key Server Service
   sbe-keyserver:
     build: ./keyserver
-    container_name: sbe.keyserver.${DOMAIN}
-    hostname: sbe.keyserver.${DOMAIN}
+    image: sbe-keyserver:${DOMAIN:-example}
+    container_name: sbe.keyserver.${DOMAIN:-example.com}
+    hostname: sbe.keyserver.${DOMAIN:-example.com}
     restart: unless-stopped
     environment:
-      - API_KEY=${KEYSERVER_API_KEY}
-      - POSTGRES_USER=${POSTGRES_USER}
-      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
-      - POSTGRES_DB=${POSTGRES_DB}
+      - API_KEY=${KEYSERVER_API_KEY:-changeme}
+      - POSTGRES_USER=${POSTGRES_USER:-sbeuser}
+      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD:-changepassword}
+      - POSTGRES_DB=${POSTGRES_DB:-sbe_keyserver}
+      - DOMAIN=${DOMAIN:-example.com}
     volumes:
       - keyserver-data:/data
       - ./keyserver/config/certs:/app/config/certs
       - /etc/localtime:/etc/localtime:ro
     ports:
-      - "${KEYSERVER_PORT}:8443"
+      - "${KEYSERVER_PORT:-8443}:8443"
     networks:
       - backup-net
     depends_on:
@@ -47,12 +56,13 @@ services:
   # Key Server Database
   sbe-keyserver-db:
     image: postgres:14-alpine
-    container_name: sbe.keyserver.db.${DOMAIN}
+    container_name: sbe.keyserver.db.${DOMAIN:-example.com}
+    hostname: sbe.keyserver.db.${DOMAIN:-example.com}
     restart: unless-stopped
     environment:
-      - POSTGRES_USER=${POSTGRES_USER}
-      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
-      - POSTGRES_DB=${POSTGRES_DB}
+      - POSTGRES_USER=${POSTGRES_USER:-sbeuser}
+      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD:-changepassword}
+      - POSTGRES_DB=${POSTGRES_DB:-sbe_keyserver}
     volumes:
       - postgres-data:/var/lib/postgresql/data
     networks:
@@ -60,8 +70,10 @@ services:
 
 networks:
   backup-net:
-    driver: bridge
+    name: backup-net-${DOMAIN:-example}
 
 volumes:
   postgres-data:
+    name: postgres-data-${DOMAIN:-example}
   keyserver-data:
+    name: keyserver-data-${DOMAIN:-example}
