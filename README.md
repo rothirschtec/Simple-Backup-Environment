@@ -218,7 +218,6 @@ previous XML format. The configuration files are located in the `backup/config/`
 
 ### Example YAML Configuration
 
-```yaml
 # SBE Backup Configuration
 servers:
   # Daily backup - runs every day at 1 AM
@@ -240,7 +239,35 @@ servers:
     intervall: "03:00"
     date: "1"  # Day of month (1-31)
     type: monthly
-    retention: 12  # Keep last 12 monthly backups
+  retention: 12  # Keep last 12 monthly backups
+```
+
+### Include/Exclude Patterns
+
+For finer control over what gets backed up, each server directory can provide
+`include.txt` and `exclude.txt` files. These files contain standard `rsync`
+filter rules. The universal backup script automatically loads them and adds the
+patterns to the `rsync` command. You can also point to custom files in
+`server.config` using the `INCLUDE_FILE` and `EXCLUDE_FILE` options.
+
+A typical `exclude.txt` might skip system directories and temporary files:
+
+```text
+/proc/
+/sys/
+/dev/
+/run/
+/tmp/
+/var/cache/*
+/home/*/.cache/
+```
+
+And a simple `include.txt` can list important paths to keep:
+
+```text
+/etc/
+/home/
+/var/www/
 ```
 
 ### Rsync Include/Exclude Patterns
