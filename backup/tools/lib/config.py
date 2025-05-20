@@ -61,7 +61,7 @@ class ConfigManager:
         Returns:
             Dict containing server configuration
         """
-        server_dir = self.base_dir / "backup" / server_name
+        server_dir = self.base_dir / "store" / server_name
         config_path = server_dir / "server.config"
         
         if not config_path.exists():
@@ -177,7 +177,7 @@ class ConfigManager:
         Returns:
             True if successful, False otherwise
         """
-        server_dir = self.base_dir / "backup" / server_name
+        server_dir = self.base_dir / "store" / server_name
         config_path = server_dir / "server.config"
         
         try:

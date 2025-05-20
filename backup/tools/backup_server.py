@@ -29,7 +29,7 @@ def run_backup(server_name, backup_type="daily", retention=None):
     base_dir = Path(__file__).resolve().parent.parent.parent
     
     # Get paths
-    server_dir = base_dir / "backup" / server_name
+    server_dir = base_dir / "store" / server_name
     mount_dir = server_dir / ".mounted"
     backup_dir = mount_dir / backup_type
     

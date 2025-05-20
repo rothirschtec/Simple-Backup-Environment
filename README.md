@@ -194,10 +194,10 @@ Each host directory contains a wrapper script that automatically passes the host
 
 ```bash
 # Using the wrapper for host1
-/opt/SBE/backup/host1/backup_server.py --daily
+/opt/SBE/store/host1/backup_server.py --daily
 
 # With retention
-/opt/SBE/backup/host1/backup_server.py --weekly --retention 4
+/opt/SBE/store/host1/backup_server.py --weekly --retention 4
 ```
 
 ### Benefits of the Universal Script
@@ -343,7 +343,7 @@ If you get "Backup script not found" errors:
 3. Make sure the wrapper script for the host is correctly created:
    ```bash
    # For a host named "server1"
-   cat /opt/SBE/backup/server1/backup_server.py
+   cat /opt/SBE/store/server1/backup_server.py
    ```
 
 ## For Existing Installations
@@ -364,11 +364,11 @@ If you have an existing installation and want to upgrade to the universal backup
 2. Create wrapper scripts for each existing host:
    ```bash
    # For each host, e.g., "server1"
-   cat > /opt/SBE/backup/server1/backup_server.py << 'EOF'
+   cat > /opt/SBE/store/server1/backup_server.py << 'EOF'
    #!/bin/bash
    python3 /opt/SBE/backup/tools/backup_server.py --server server1 "$@"
    EOF
-   chmod +x /opt/SBE/backup/server1/backup_server.py
+   chmod +x /opt/SBE/store/server1/backup_server.py
    ```
 
 3. Add the `run_backup` command:

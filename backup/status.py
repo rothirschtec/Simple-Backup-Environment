@@ -34,7 +34,10 @@ class BackupStatus:
         else:
             # Set base directory to the SBE root (2 levels up from this script)
             self.base_dir = Path(__file__).resolve().parent.parent
-        
+
+        # Directory where backups are stored
+        self.store_dir = self.base_dir / "store"
+
         self.config = ConfigManager(str(self.base_dir))
         
         # Load environment variables
@@ -159,7 +162,7 @@ class BackupStatus:
         print("-------------")
         
         # Get list of all backup directories
-        backup_dir = self.base_dir / "backup"
+        backup_dir = self.store_dir
         mounted_count = 0
         
         for server_dir in backup_dir.iterdir():

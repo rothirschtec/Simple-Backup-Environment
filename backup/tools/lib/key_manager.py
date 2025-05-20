@@ -220,7 +220,7 @@ class KeyManager:
             else:
                 # Assuming standard SBE structure
                 base_dir = Path(__file__).resolve().parent.parent.parent.parent
-                backup_path = base_dir / "backup" / hostname / "passphrase.backup"
+                backup_path = base_dir / "store" / hostname / "passphrase.backup"
             
             # Create parent directories if they don't exist
             backup_path.parent.mkdir(parents=True, exist_ok=True)
@@ -265,8 +265,8 @@ class KeyManager:
         else:
             # Assuming standard SBE structure
             base_dir = Path(__file__).resolve().parent.parent.parent.parent
-            backup_path = base_dir / "backup" / hostname / "passphrase.backup"
-            alt_backup_path = base_dir / "backup" / hostname / "passphrase"
+            backup_path = base_dir / "store" / hostname / "passphrase.backup"
+            alt_backup_path = base_dir / "store" / hostname / "passphrase"
         
         # Try backup file
         try:
