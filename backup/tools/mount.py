@@ -298,27 +298,6 @@ class BackupMounter:
             return True, f"LUKS device {device} opened as {name}"
         except Exception as e:
             return False, f"Error opening LUKS device: {str(e)}"
-            
-            # Use echo to avoid passphrase in process list
-            process = subprocess.Popen(
-                ["echo", "-n", passphrase],
-                stdout=subprocess.PIPE
-            )
-            
-            # Pipe output to cryptsetup
-            result = subprocess.run(
-                ["cryptsetup", "luksOpen", "--type", "luks2", device, name],
-                stdin=process.stdout,
-                capture_output=True,
-                text=True
-            )
-            
-            if result.returncode != 0:
-                return False, f"Failed to open LUKS device: {result.stderr}"
-            
-            return True, f"LUKS device {device} opened as {name}"
-        except Exception as e:
-            return False, f"Error opening LUKS device: {str(e)}"
     
     def _close_luks_device(self, name: str) -> Tuple[bool, str]:
         """Close a LUKS encrypted device
