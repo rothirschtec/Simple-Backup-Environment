@@ -63,13 +63,14 @@ def run_backup(server_name, backup_type="daily", retention=None):
         # Get rsync parameters
         rsync_opts = ["-a", "--delete", "--numeric-ids", "--relative"]
 
-        # Add SSH options if needed
-        ssh_opts = f"ssh -p {config.get('PORT', '22')}"
-        rsync_opts.append(f"-e '{ssh_opts}'")
+        # Add SSH options if needed (pass as separate arguments)
+        ssh_cmd = f"ssh -p {config.get('PORT', '22')}"
+        rsync_opts.extend(["-e", ssh_cmd])
 
         # Build rsync command
         rsync_cmd = ["rsync"] + rsync_opts
-        source = f"{config.get('USER', 'root')}@{config.get('SERVER')}:{config.get('SHARE', '/')}"
+        share = config.get('SHARE', '/') or '/'  # Default to '/' if empty
+        source = f"{config.get('USER', 'root')}@{config.get('SERVER')}:{share}"
         target = str(backup_dir / timestamp)
 
         # Create target directory
