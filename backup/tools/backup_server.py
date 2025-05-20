@@ -67,6 +67,43 @@ def run_backup(server_name, backup_type="daily", retention=None):
         ssh_cmd = f"ssh -p {config.get('PORT', '22')}"
         rsync_opts.extend(["-e", ssh_cmd])
 
+        # Apply include/exclude patterns
+        exclude_file = config.get("EXCLUDE_FILE")
+        include_file = config.get("INCLUDE_FILE")
+
+        # Fallback to default files in the server directory
+        if not exclude_file:
+            default_ex = server_dir / "exclude.txt"
+            if default_ex.exists():
+                exclude_file = str(default_ex)
+        if not include_file:
+            default_in = server_dir / "include.txt"
+            if default_in.exists():
+                include_file = str(default_in)
+
+        def _read_patterns(file_path):
+            patterns = []
+            path = Path(file_path)
+            if not path.is_absolute():
+                path = server_dir / path
+            if path.exists():
+                with open(path, "r") as f:
+                    for line in f:
+                        line = line.strip()
+                        if line and not line.startswith("#"):
+                            patterns.append(line)
+            else:
+                logger.warning(f"Pattern file {path} not found")
+            return patterns
+
+        if exclude_file:
+            for pat in _read_patterns(exclude_file):
+                rsync_opts.extend(["--exclude", pat])
+
+        if include_file:
+            for pat in _read_patterns(include_file):
+                rsync_opts.extend(["--include", pat])
+
         # Build rsync command
         rsync_cmd = ["rsync"] + rsync_opts
         share = config.get('SHARE', '/') or '/'  # Default to '/' if empty
