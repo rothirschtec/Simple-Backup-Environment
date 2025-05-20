@@ -243,6 +243,23 @@ servers:
     retention: 12  # Keep last 12 monthly backups
 ```
 
+### Rsync Include/Exclude Patterns
+
+To control which files are copied you can provide pattern files in each
+server's directory (e.g. `store/host1/`).  If an `include.txt` or
+`exclude.txt` file exists there, the universal backup script adds the patterns
+to the `rsync` command automatically.  Lines starting with `#` are ignored.
+
+Alternatively you can specify custom paths in `server.config`:
+
+```
+INCLUDE_FILE=/path/to/include.txt
+EXCLUDE_FILE=/path/to/exclude.txt
+```
+
+Relative paths are resolved against the server's directory.  Use this feature
+to skip paths like `/proc` or `/sys` that may cause errors during backup.
+
 ## Directory Structure
 
 ```

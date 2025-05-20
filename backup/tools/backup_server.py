@@ -67,6 +67,43 @@ def run_backup(server_name, backup_type="daily", retention=None):
         ssh_opts = f"ssh -p {config.get('PORT', '22')}"
         rsync_opts.append(f"-e '{ssh_opts}'")
 
+        # Apply include/exclude patterns
+        exclude_file = config.get("EXCLUDE_FILE")
+        include_file = config.get("INCLUDE_FILE")
+
+        # Fallback to default files in the server directory
+        if not exclude_file:
+            default_ex = server_dir / "exclude.txt"
+            if default_ex.exists():
+                exclude_file = str(default_ex)
+        if not include_file:
+            default_in = server_dir / "include.txt"
+            if default_in.exists():
+                include_file = str(default_in)
+
+        def _read_patterns(file_path):
+            patterns = []
+            path = Path(file_path)
+            if not path.is_absolute():
+                path = server_dir / path
+            if path.exists():
+                with open(path, "r") as f:
+                    for line in f:
+                        line = line.strip()
+                        if line and not line.startswith("#"):
+                            patterns.append(line)
+            else:
+                logger.warning(f"Pattern file {path} not found")
+            return patterns
+
+        if exclude_file:
+            for pat in _read_patterns(exclude_file):
+                rsync_opts.extend(["--exclude", pat])
+
+        if include_file:
+            for pat in _read_patterns(include_file):
+                rsync_opts.extend(["--include", pat])
+
         # Build rsync command
         rsync_cmd = ["rsync"] + rsync_opts
         source = f"{config.get('USER', 'root')}@{config.get('SERVER')}:{config.get('SHARE', '/')}"
@@ -77,14 +114,21 @@ def run_backup(server_name, backup_type="daily", retention=None):
 
         # Run rsync
         logger.info(f"Running rsync from {source} to {target}")
-        command = f"rsync {' '.join(rsync_opts)} {source} {target}"
+        command = rsync_cmd + [source, target]
+        result = subprocess.run(command, capture_output=True, text=True)
+        if result.returncode != 0:
+            raise RuntimeError(
+                f"rsync failed with code {result.returncode}: {result.stderr}"
+            )
 
-        # For testing, just create a placeholder file
+        # Record executed command and timestamp
         with open(f"{target}/backup_info.txt", "w") as f:
             f.write(f"Backup created at {datetime.now().isoformat()}\n")
             f.write(f"Server: {server_name}\n")
             f.write(f"Type: {backup_type}\n")
-            f.write(f"Command: {command}\n")
+            f.write(
+                f"Command: {' '.join(command)}\nReturn code: {result.returncode}\n"
+            )
 
         logger.info(f"Created backup at {target}")
 
