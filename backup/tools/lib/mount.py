@@ -68,8 +68,25 @@ class BackupMounter:
         encrypted = server_config.get("ENCRYPTED", "0") == "1"
         
         if encrypted:
+            # Determine the mapper name
+            device_name = server_config.get("DEVICE_NAME", None)
+            if not device_name:
+                device_name_file = server_dir / "device_name"
+                if device_name_file.exists():
+                    with open(device_name_file, "r") as f:
+                        device_name = f.read().strip()
+                else:
+                    import hashlib
+                    h = hashlib.md5(server_name.encode()).hexdigest()[:8]
+                    device_name = f"sbe_{h}_mapper"
+                    try:
+                        with open(device_name_file, "w") as f:
+                            f.write(device_name)
+                    except Exception as e:
+                        logger.warning(f"Could not save device name: {e}")
+
             # Check if LUKS device is already open
-            mapper_path = Path(f"/dev/mapper/{server_name}.mounted")
+            mapper_path = Path(f"/dev/mapper/{device_name}")
             if mapper_path.exists():
                 logger.info(f"LUKS device {mapper_path} is already open")
             else:
@@ -92,12 +109,12 @@ class BackupMounter:
                         passphrase = f.read().strip()
                 
                 # Open LUKS device
-                result = self._open_luks_device(str(backup_img), f"{server_name}.mounted", passphrase)
+                result = self._open_luks_device(str(backup_img), device_name, passphrase)
                 if not result[0]:
                     return result
-            
+
             # Mount the device
-            return self._mount_device(f"/dev/mapper/{server_name}.mounted", str(mount_dir))
+            return self._mount_device(f"/dev/mapper/{device_name}", str(mount_dir))
         else:
             # Not encrypted, mount directly
             return self._mount_device(str(backup_img), str(mount_dir))
@@ -131,10 +148,22 @@ class BackupMounter:
         
         # Check if encrypted
         encrypted = server_config.get("ENCRYPTED", "0") == "1"
-        
+
         if encrypted:
+            # Determine the mapper name
+            device_name = server_config.get("DEVICE_NAME", None)
+            if not device_name:
+                device_name_file = server_dir / "device_name"
+                if device_name_file.exists():
+                    with open(device_name_file, "r") as f:
+                        device_name = f.read().strip()
+                else:
+                    import hashlib
+                    h = hashlib.md5(server_name.encode()).hexdigest()[:8]
+                    device_name = f"sbe_{h}_mapper"
+
             # Close LUKS device
-            return self._close_luks_device(f"{server_name}.mounted")
+            return self._close_luks_device(device_name)
         
         return True, f"Backup directory for {server_name} unmounted successfully"
     

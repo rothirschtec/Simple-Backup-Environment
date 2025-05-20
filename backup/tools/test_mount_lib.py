@@ -62,5 +62,33 @@ class OpenLuksDeviceTest(unittest.TestCase):
             self.assertEqual(f.read().strip(), "unique_mapper")
         self.assertIn("unique_mapper", msg)
 
+class MountDirectoryTest(unittest.TestCase):
+    def test_mount_uses_device_name_file(self):
+        tmp = tempfile.TemporaryDirectory()
+        base_dir = Path(tmp.name)
+        server_dir = base_dir / "backup" / "srv"
+        server_dir.mkdir(parents=True)
+
+        # minimal config
+        with open(server_dir / "server.config", "w") as f:
+            f.write('ENCRYPTED="1"\n')
+
+        # device name file and passphrase
+        with open(server_dir / "device_name", "w") as f:
+            f.write("dname")
+        with open(server_dir / "passphrase", "w") as f:
+            f.write("pass")
+
+        mounter = BackupMounter(str(base_dir))
+
+        with patch.object(BackupMounter, "_is_mounted", return_value=False), \
+             patch.object(BackupMounter, "_open_luks_device", return_value=(True, "ok")) as open_mock, \
+             patch.object(BackupMounter, "_mount_device", return_value=(True, "ok")) as mount_mock:
+            success, msg = mounter.mount_backup_directory("srv")
+
+        self.assertTrue(success)
+        open_mock.assert_called_once_with(str(server_dir / "backups"), "dname", "pass")
+        mount_mock.assert_called_once_with("/dev/mapper/dname", str(server_dir / ".mounted"))
+
 if __name__ == "__main__":
     unittest.main()
