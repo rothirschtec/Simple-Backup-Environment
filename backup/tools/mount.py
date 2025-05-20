@@ -297,7 +297,7 @@ class BackupMounter:
             
             return True, f"LUKS device {device} opened as {name}"
         except Exception as e:
-            return False, f"Error opening LUKS device: {str(e)}" also exists"
+            return False, f"Error opening LUKS device: {str(e)}"
             
             # Use echo to avoid passphrase in process list
             process = subprocess.Popen(
