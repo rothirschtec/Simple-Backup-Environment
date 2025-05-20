@@ -63,13 +63,14 @@ def run_backup(server_name, backup_type="daily", retention=None):
         # Get rsync parameters
         rsync_opts = ["-a", "--delete", "--numeric-ids", "--relative"]
 
-        # Add SSH options if needed
-        ssh_opts = f"ssh -p {config.get('PORT', '22')}"
-        rsync_opts.append(f"-e '{ssh_opts}'")
+        # Add SSH options if needed (pass as separate arguments)
+        ssh_cmd = f"ssh -p {config.get('PORT', '22')}"
+        rsync_opts.extend(["-e", ssh_cmd])
 
         # Build rsync command
         rsync_cmd = ["rsync"] + rsync_opts
-        source = f"{config.get('USER', 'root')}@{config.get('SERVER')}:{config.get('SHARE', '/')}"
+        share = config.get('SHARE', '/') or '/'  # Default to '/' if empty
+        source = f"{config.get('USER', 'root')}@{config.get('SERVER')}:{share}"
         target = str(backup_dir / timestamp)
 
         # Create target directory
@@ -77,14 +78,21 @@ def run_backup(server_name, backup_type="daily", retention=None):
 
         # Run rsync
         logger.info(f"Running rsync from {source} to {target}")
-        command = f"rsync {' '.join(rsync_opts)} {source} {target}"
+        command = rsync_cmd + [source, target]
+        result = subprocess.run(command, capture_output=True, text=True)
+        if result.returncode != 0:
+            raise RuntimeError(
+                f"rsync failed with code {result.returncode}: {result.stderr}"
+            )
 
-        # For testing, just create a placeholder file
+        # Record executed command and timestamp
         with open(f"{target}/backup_info.txt", "w") as f:
             f.write(f"Backup created at {datetime.now().isoformat()}\n")
             f.write(f"Server: {server_name}\n")
             f.write(f"Type: {backup_type}\n")
-            f.write(f"Command: {command}\n")
+            f.write(
+                f"Command: {' '.join(command)}\nReturn code: {result.returncode}\n"
+            )
 
         logger.info(f"Created backup at {target}")
 
