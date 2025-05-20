@@ -29,7 +29,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     && rm -rf /var/lib/apt/lists/*
 
 
-ARG workdir=/opt/SBE/SBE_data
+ARG workdir=/opt/SBE/backup
 ARG reportdir=/opt/SBE/SBE_reports
 RUN mkdir -p $workdir \
 	&& mkdir -p $reportdir
