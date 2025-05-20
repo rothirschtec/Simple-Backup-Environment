@@ -124,6 +124,7 @@ mount_backup --umount --project ServerName
 ```
 
 Mounts or unmounts a backup directory for maintenance or manual operations.
+Backups started via `run_backup` or the host wrappers automatically handle mounting and unmounting.
 
 ### Check Backup Status
 
@@ -199,6 +200,8 @@ Each host directory contains a wrapper script that automatically passes the host
 # With retention
 /opt/SBE/store/host1/backup_server.py --weekly --retention 4
 ```
+
+The wrapper handles mounting the backup volume before the backup starts and unmounts it afterward, so manual mounting isn't required for routine backups.
 
 ### Benefits of the Universal Script
 

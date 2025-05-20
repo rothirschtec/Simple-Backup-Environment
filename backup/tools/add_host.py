@@ -351,24 +351,23 @@ class HostManager:
         if run_backup:
             logger.info("Starting initial backup")
             try:
-                # First check for the Python version, then fall back to shell
+                # Prefer the python wrapper but fall back to .sh if present
                 backup_py = backup_dir / "backup_server.py"
                 backup_sh = backup_dir / "backup_server.sh"
-                
+
+                script_to_run = None
                 if backup_py.exists():
-                    subprocess.Popen(
-                        ["python3", str(backup_py)],
-                        stdout=subprocess.PIPE,
-                        stderr=subprocess.PIPE
-                    )
-                    logger.info("Python backup script started in background")
+                    script_to_run = backup_py
                 elif backup_sh.exists():
+                    script_to_run = backup_sh
+
+                if script_to_run:
                     subprocess.Popen(
-                        ["bash", str(backup_sh)],
+                        [str(script_to_run)],
                         stdout=subprocess.PIPE,
                         stderr=subprocess.PIPE
                     )
-                    logger.info("Shell backup script started in background")
+                    logger.info("Backup script started in background")
                 else:
                     logger.warning("Could not find backup script to run")
             except Exception as e:

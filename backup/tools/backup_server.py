@@ -8,6 +8,11 @@ import subprocess
 from pathlib import Path
 from datetime import datetime
 
+try:
+    from lib.mount import BackupMounter
+except ImportError:
+    from backup.tools.lib.mount import BackupMounter
+
 # Configure logging
 logging.basicConfig(
     level=logging.INFO,
@@ -32,58 +37,72 @@ def run_backup(server_name, backup_type="daily", retention=None):
     server_dir = base_dir / "store" / server_name
     mount_dir = server_dir / ".mounted"
     backup_dir = mount_dir / backup_type
-    
-    # Check if mounted
+
+    # Ensure mount
+    mounter = BackupMounter(str(base_dir))
+    mounted_here = False
     if not _is_mounted(mount_dir):
-        logger.error(f"Backup directory for {server_name} is not mounted")
-        return False
+        success, msg = mounter.mount_backup_directory(server_name)
+        if not success:
+            logger.error(f"Failed to mount backup directory: {msg}")
+            return False
+        mounter.initialize_backup_directories(server_name)
+        mounted_here = True
     
     # Create timestamp for this backup
     timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
     
+    success = False
     try:
         # Make sure backup directory exists
         backup_dir.mkdir(parents=True, exist_ok=True)
-        
+
         # Read server configuration
         config = _read_server_config(server_dir / "server.config")
-        
+
         # Get rsync parameters
         rsync_opts = ["-a", "--delete", "--numeric-ids", "--relative"]
-        
+
         # Add SSH options if needed
         ssh_opts = f"ssh -p {config.get('PORT', '22')}"
         rsync_opts.append(f"-e '{ssh_opts}'")
-        
+
         # Build rsync command
         rsync_cmd = ["rsync"] + rsync_opts
         source = f"{config.get('USER', 'root')}@{config.get('SERVER')}:{config.get('SHARE', '/')}"
         target = str(backup_dir / timestamp)
-        
+
         # Create target directory
         os.makedirs(target, exist_ok=True)
-        
+
         # Run rsync
         logger.info(f"Running rsync from {source} to {target}")
         command = f"rsync {' '.join(rsync_opts)} {source} {target}"
-        
+
         # For testing, just create a placeholder file
         with open(f"{target}/backup_info.txt", "w") as f:
             f.write(f"Backup created at {datetime.now().isoformat()}\n")
             f.write(f"Server: {server_name}\n")
             f.write(f"Type: {backup_type}\n")
             f.write(f"Command: {command}\n")
-        
+
         logger.info(f"Created backup at {target}")
-        
+
         # Implement retention policy if specified
         if retention:
             _apply_retention_policy(backup_dir, retention)
-        
-        return True
+
+        success = True
     except Exception as e:
         logger.error(f"Backup failed: {str(e)}")
-        return False
+        success = False
+    finally:
+        if mounted_here:
+            u_success, msg = mounter.unmount_backup_directory(server_name)
+            if not u_success:
+                logger.error(f"Failed to unmount backup directory: {msg}")
+
+    return success
 
 def _is_mounted(mount_point):
     """Check if a directory is mounted"""
