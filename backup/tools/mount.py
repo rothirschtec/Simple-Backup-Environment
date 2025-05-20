@@ -27,6 +27,26 @@ except ImportError:
         logger.error("Could not import required modules. Make sure you're running this script from the correct directory.")
         sys.exit(1)
 
+
+def generate_unique_device_name(hostname: str) -> str:
+    """
+    Generate a unique device name that won't conflict with existing mapper entries
+    
+    Args:
+        hostname: Original hostname
+        
+    Returns:
+        Unique device name
+    """
+    # Use a combination of timestamp, random string, and hash
+    timestamp = int(time.time())
+    random_part = ''.join(random.choice(string.ascii_lowercase) for _ in range(6))
+    h = hashlib.md5(hostname.encode()).hexdigest()[:4]
+    
+    # Use a prefix that's unlikely to conflict with other device mapper entries
+    return f"sbe_map_{timestamp}_{random_part}_{h}"
+
+
 class BackupMounter:
     """Handles mounting and unmounting of backup directories"""
     
@@ -242,6 +262,43 @@ class BackupMounter:
             Tuple of (success, message)
         """
         try:
+            # Check if the device already exists
+            mapper_path = f"/dev/mapper/{name}"
+            
+            if os.path.exists(mapper_path):
+                logger.warning(f"Device {name} already exists, generating a new unique name")
+                # Generate a truly unique name
+                timestamp = int(time.time())
+                random_part = ''.join(random.choice(string.ascii_lowercase) for _ in range(6))
+                name = f"sbe_map_{timestamp}_{random_part}"
+                logger.info(f"Using new device name: {name}")
+                
+                # Save this name for future use
+                server_dir = Path(device).parent
+                with open(server_dir / "device_name", "w") as f:
+                    f.write(name)
+            
+            # Use echo to avoid passphrase in process list
+            process = subprocess.Popen(
+                ["echo", "-n", passphrase],
+                stdout=subprocess.PIPE
+            )
+            
+            # Pipe output to cryptsetup
+            result = subprocess.run(
+                ["cryptsetup", "luksOpen", "--type", "luks2", device, name],
+                stdin=process.stdout,
+                capture_output=True,
+                text=True
+            )
+            
+            if result.returncode != 0:
+                return False, f"Failed to open LUKS device: {result.stderr}"
+            
+            return True, f"LUKS device {device} opened as {name}"
+        except Exception as e:
+            return False, f"Error opening LUKS device: {str(e)}" also exists"
+            
             # Use echo to avoid passphrase in process list
             process = subprocess.Popen(
                 ["echo", "-n", passphrase],

@@ -511,54 +511,41 @@ class HostManager:
             return False, f"Error encrypting backup image: {error_msg}"
         
     def _copy_backup_script(self, hostname: str) -> bool:
-        """Copy the backup script to the server directory
+        """Create a symbolic link to the universal backup script
         
         Args:
-            hostname: Host to copy script for
+            hostname: Host to setup backup script for
             
         Returns:
             True if successful, False otherwise
         """
         try:
-            # Try to find the backup script - first in Python, then in shell
-            # First check in the direct backup directory
-            py_source = self.base_dir / "backup" / "backup_server.py"
-            if py_source.exists():
-                source = py_source
-                destination = self.base_dir / "backup" / hostname / "backup_server.py"
-            else:
-                # Check in the tools directory
-                py_source = self.base_dir / "backup" / "tools" / "backup_server.py"
-                if py_source.exists():
-                    source = py_source
-                    destination = self.base_dir / "backup" / hostname / "backup_server.py"
-                else:
-                    # Fall back to shell script
-                    source = self.base_dir / "backup" / "scripts" / "tools" / "backup_server.sh"
-                    destination = self.base_dir / "backup" / hostname / "backup_server.sh"
-                    
-                    # If not in scripts dir, check tools dir
-                    if not source.exists():
-                        source = self.base_dir / "backup" / "tools" / "backup_server.sh"
+            # Use universal backup script in the tools directory
+            universal_script = self.base_dir / "backup" / "tools" / "backup_server.py"
             
-            if source.exists():
-                # Copy file
-                with open(source, "r") as src_file:
-                    content = src_file.read()
-                
-                with open(destination, "w") as dest_file:
-                    dest_file.write(content)
-                
-                # Make executable
-                os.chmod(destination, 0o755)
-                
-                logger.info(f"Copied backup script from {source} to {destination}")
-                return True
-            else:
-                logger.error(f"Backup script not found at any of the expected locations")
-                return False
+            # Create command wrapper script
+            wrapper_script = self.base_dir / "backup" / hostname / "backup_server.py"
+            
+            # Create the wrapper script content
+            wrapper_content = f'''#!/bin/bash
+# Wrapper script for universal backup_server.py
+# Auto-generated, do not edit
+
+python3 {universal_script} --server {hostname} "$@"
+'''
+            
+            # Write the wrapper script
+            os.makedirs(os.path.dirname(wrapper_script), exist_ok=True)
+            with open(wrapper_script, "w") as f:
+                f.write(wrapper_content)
+            
+            # Make it executable
+            os.chmod(wrapper_script, 0o755)
+            
+            logger.info(f"Created backup script wrapper for {hostname}")
+            return True
         except Exception as e:
-            logger.error(f"Error copying backup script: {str(e)}")
+            logger.error(f"Error creating backup script wrapper: {str(e)}")
             return False
     
     def _transfer_ssh_key(self, user: str, server: str, port: str) -> Tuple[bool, str]:

@@ -312,10 +312,8 @@ class BackupScheduler:
             backup_type: Type of backup (daily, weekly, monthly, yearly, latest)
             retention: Retention period in days
         """
-        # Check if backup script exists
+        # Check if backup directory exists
         backup_dir = self.base_dir / "backup" / directory
-        backup_script = backup_dir / "backup_server.sh"
-        py_backup_script = backup_dir / "backup_server.py"
         
         if not backup_dir.exists():
             logger.error(f"Backup directory {backup_dir} doesn't exist")
@@ -336,23 +334,19 @@ class BackupScheduler:
         # Add to run queue
         self._add_to_run_queue(directory, backup_type)
         
-        # Build command
-        command = []
+        # Universal backup script
+        universal_script = self.base_dir / "backup" / "tools" / "backup_server.py"
         
-        if py_backup_script.exists():
-            # Use Python script if available
-            command = [sys.executable, str(py_backup_script), f"--{backup_type}"]
-            if retention is not None:
-                command.extend(["--retention", str(retention)])
-        elif backup_script.exists():
-            # Use shell script
-            command = ["bash", str(backup_script), f"--{backup_type}"]
-            if retention is not None:
-                command.append(f"retention={retention}")
-        else:
-            logger.error(f"Backup script not found for {directory}")
-            self._send_email(f"Backup error for {directory}", f"Backup script not found in {backup_dir}")
-            return
+        # Build command
+        command = [
+            sys.executable, 
+            str(universal_script), 
+            "--server", directory,
+            f"--{backup_type}"
+        ]
+        
+        if retention is not None:
+            command.extend(["--retention", str(retention)])
         
         # Start backup in background
         try:
