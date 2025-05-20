@@ -77,14 +77,21 @@ def run_backup(server_name, backup_type="daily", retention=None):
 
         # Run rsync
         logger.info(f"Running rsync from {source} to {target}")
-        command = f"rsync {' '.join(rsync_opts)} {source} {target}"
+        command = rsync_cmd + [source, target]
+        result = subprocess.run(command, capture_output=True, text=True)
+        if result.returncode != 0:
+            raise RuntimeError(
+                f"rsync failed with code {result.returncode}: {result.stderr}"
+            )
 
-        # For testing, just create a placeholder file
+        # Record executed command and timestamp
         with open(f"{target}/backup_info.txt", "w") as f:
             f.write(f"Backup created at {datetime.now().isoformat()}\n")
             f.write(f"Server: {server_name}\n")
             f.write(f"Type: {backup_type}\n")
-            f.write(f"Command: {command}\n")
+            f.write(
+                f"Command: {' '.join(command)}\nReturn code: {result.returncode}\n"
+            )
 
         logger.info(f"Created backup at {target}")
 
