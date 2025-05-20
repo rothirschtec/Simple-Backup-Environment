@@ -247,14 +247,19 @@ class HostManager:
             success, message = self._encrypt_backup_image(str(backup_img), passphrase, device_name)
             if not success:
                 return False, message
-            
+
             # Store passphrase both locally and in key server
             with open(backup_dir / "passphrase", "w") as f:
                 f.write(passphrase)
-            
-            # Store the device name
-            with open(backup_dir / "device_name", "w") as f:
-                f.write(device_name)
+
+            # Determine final device name (it may have been changed)
+            device_name_file = backup_dir / "device_name"
+            if device_name_file.exists():
+                with open(device_name_file, "r") as f:
+                    device_name = f.read().strip()
+            else:
+                with open(device_name_file, "w") as f:
+                    f.write(device_name)
             
             # Always try to store in key server first
             logger.info("Attempting to store encryption key in key server")
@@ -423,43 +428,18 @@ class HostManager:
         """
         # First check if the device already exists and forcibly remove it
         mapper_path = f"/dev/mapper/{device_name}"
-        
+
         # Always try to forcibly clean up any existing device first
         if os.path.exists(mapper_path):
             logger.info(f"Removing existing device: {mapper_path}")
-            
-            # First try to unmount if mounted
+
             try:
-                subprocess.run(
-                    ["umount", mapper_path],
-                    stdout=subprocess.DEVNULL,
-                    stderr=subprocess.DEVNULL
-                )
+                subprocess.run(["umount", mapper_path], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+                subprocess.run(["cryptsetup", "luksClose", device_name], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+                subprocess.run(["dmsetup", "remove", "-f", device_name], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
             except Exception:
                 pass
-                
-            # Try to close with cryptsetup
-            try:
-                subprocess.run(
-                    ["cryptsetup", "luksClose", device_name],
-                    stdout=subprocess.DEVNULL,
-                    stderr=subprocess.DEVNULL
-                )
-            except Exception:
-                pass
-                
-            # If still exists, try dmsetup force remove
-            if os.path.exists(mapper_path):
-                try:
-                    subprocess.run(
-                        ["dmsetup", "remove", "-f", device_name],
-                        stdout=subprocess.DEVNULL,
-                        stderr=subprocess.DEVNULL
-                    )
-                except Exception:
-                    pass
-        
-        # If we still have an existing device, let's use a different name
+
         if os.path.exists(mapper_path):
             return False, "Cannot create LUKS device - all attempts failed. Try rebooting the container."
         
@@ -483,26 +463,11 @@ class HostManager:
             if format_process.returncode != 0:
                 return False, f"Failed to format with LUKS: {format_stderr.decode()}"
             
-            # Open with LUKS
-            logger.info(f"Opening LUKS device as {device_name}")
-            open_cmd = [
-                "cryptsetup", 
-                "--type", "luks2",
-                "--batch-mode",  # For non-interactive use
-                "luksOpen", 
-                image_path, 
-                device_name
-            ]
-            
-            # Use another pipe for the passphrase
-            open_process = subprocess.Popen(open_cmd, stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-            open_stdout, open_stderr = open_process.communicate(input=passphrase.encode())
-            
-            if open_process.returncode != 0:
-                error_msg = open_stderr.decode()
-                logger.error(f"Failed to open LUKS device: {error_msg}")
-                return False, f"Failed to open LUKS device: {error_msg}"
-            
+            # Open with LUKS using the BackupMounter helper
+            success, msg = self.mounter._open_luks_device(image_path, device_name, passphrase)
+            if not success:
+                return False, msg
+
             return True, "Backup image encrypted successfully"
             
         except Exception as e:
