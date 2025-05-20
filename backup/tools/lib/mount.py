@@ -3,8 +3,12 @@
 import os
 import logging
 import subprocess
+import time
+import random
+import string
+import hashlib
 from pathlib import Path
-from typing import Optional, Tuple, Dict, Any
+from typing import Optional, Tuple
 
 # Import our modules
 try:
@@ -64,8 +68,25 @@ class BackupMounter:
         encrypted = server_config.get("ENCRYPTED", "0") == "1"
         
         if encrypted:
+            # Determine the mapper name
+            device_name = server_config.get("DEVICE_NAME", None)
+            if not device_name:
+                device_name_file = server_dir / "device_name"
+                if device_name_file.exists():
+                    with open(device_name_file, "r") as f:
+                        device_name = f.read().strip()
+                else:
+                    import hashlib
+                    h = hashlib.md5(server_name.encode()).hexdigest()[:8]
+                    device_name = f"sbe_{h}_mapper"
+                    try:
+                        with open(device_name_file, "w") as f:
+                            f.write(device_name)
+                    except Exception as e:
+                        logger.warning(f"Could not save device name: {e}")
+
             # Check if LUKS device is already open
-            mapper_path = Path(f"/dev/mapper/{server_name}.mounted")
+            mapper_path = Path(f"/dev/mapper/{device_name}")
             if mapper_path.exists():
                 logger.info(f"LUKS device {mapper_path} is already open")
             else:
@@ -88,12 +109,12 @@ class BackupMounter:
                         passphrase = f.read().strip()
                 
                 # Open LUKS device
-                result = self._open_luks_device(str(backup_img), f"{server_name}.mounted", passphrase)
+                result = self._open_luks_device(str(backup_img), device_name, passphrase)
                 if not result[0]:
                     return result
-            
+
             # Mount the device
-            return self._mount_device(f"/dev/mapper/{server_name}.mounted", str(mount_dir))
+            return self._mount_device(f"/dev/mapper/{device_name}", str(mount_dir))
         else:
             # Not encrypted, mount directly
             return self._mount_device(str(backup_img), str(mount_dir))
@@ -127,10 +148,22 @@ class BackupMounter:
         
         # Check if encrypted
         encrypted = server_config.get("ENCRYPTED", "0") == "1"
-        
+
         if encrypted:
+            # Determine the mapper name
+            device_name = server_config.get("DEVICE_NAME", None)
+            if not device_name:
+                device_name_file = server_dir / "device_name"
+                if device_name_file.exists():
+                    with open(device_name_file, "r") as f:
+                        device_name = f.read().strip()
+                else:
+                    import hashlib
+                    h = hashlib.md5(server_name.encode()).hexdigest()[:8]
+                    device_name = f"sbe_{h}_mapper"
+
             # Close LUKS device
-            return self._close_luks_device(f"{server_name}.mounted")
+            return self._close_luks_device(device_name)
         
         return True, f"Backup directory for {server_name} unmounted successfully"
     
@@ -181,36 +214,60 @@ class BackupMounter:
         except Exception as e:
             logger.error(f"Error checking mount status: {str(e)}")
             return False
+
+    def _generate_unique_device_name(self, hostname: str) -> str:
+        """Generate a unique mapper name similar to backup.tools.mount"""
+        timestamp = int(time.time())
+        random_part = ''.join(random.choice(string.ascii_lowercase) for _ in range(6))
+        h = hashlib.md5(hostname.encode()).hexdigest()[:4]
+        return f"sbe_map_{timestamp}_{random_part}_{h}"
     
     def _open_luks_device(self, device: str, name: str, passphrase: str) -> Tuple[bool, str]:
-        """Open a LUKS encrypted device
-        
-        Args:
-            device: Path to the encrypted device
-            name: Name to use for the mapped device
-            passphrase: LUKS passphrase
-            
-        Returns:
-            Tuple of (success, message)
-        """
+        """Open a LUKS encrypted device and handle existing mapper names"""
+        mapper_path = Path(f"/dev/mapper/{name}")
+
+        def mapper_exists() -> bool:
+            if mapper_path.exists():
+                return True
+            try:
+                res = subprocess.run(["dmsetup", "ls"], capture_output=True, text=True)
+                if res.returncode == 0:
+                    return any(line.split()[0] == name for line in res.stdout.splitlines())
+            except Exception:
+                pass
+            return False
+
         try:
-            # Use echo to avoid passphrase in process list
-            process = subprocess.Popen(
-                ["echo", "-n", passphrase],
-                stdout=subprocess.PIPE
-            )
-            
-            # Pipe output to cryptsetup
-            result = subprocess.run(
-                ["cryptsetup", "luksOpen", "--type", "luks2", device, name],
-                stdin=process.stdout,
-                capture_output=True,
-                text=True
-            )
-            
+            if mapper_exists():
+                logger.info(f"Mapper {name} already exists, attempting cleanup")
+                # Attempt to unmount and close
+                subprocess.run(["umount", str(mapper_path)], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+                subprocess.run(["cryptsetup", "luksClose", name], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+                subprocess.run(["dmsetup", "remove", "-f", name], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+
+                if mapper_exists():
+                    logger.warning("Cleanup failed, generating new mapper name")
+                    new_name = self._generate_unique_device_name(name)
+                    server_dir = Path(device).parent
+                    try:
+                        with open(server_dir / "device_name", "w") as f:
+                            f.write(new_name)
+                    except Exception as e:
+                        logger.error(f"Failed to write device name: {e}")
+                    name = new_name
+                    mapper_path = Path(f"/dev/mapper/{name}")
+
+            process = subprocess.Popen([
+                "echo", "-n", passphrase
+            ], stdout=subprocess.PIPE)
+
+            result = subprocess.run([
+                "cryptsetup", "luksOpen", "--type", "luks2", device, name
+            ], stdin=process.stdout, capture_output=True, text=True)
+
             if result.returncode != 0:
                 return False, f"Failed to open LUKS device: {result.stderr}"
-            
+
             return True, f"LUKS device {device} opened as {name}"
         except Exception as e:
             return False, f"Error opening LUKS device: {str(e)}"
