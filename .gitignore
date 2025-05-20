@@ -9,10 +9,25 @@
 !.env.example
 !setup_repo.sh
 !migrate.sh
+!migrate_to_python.sh
+!requirements.txt
 
-# Backup Service files
+# Backup Service files (Python version)
 !backup/
 !backup/Dockerfile
+!backup/*.py
+!backup/tools/
+!backup/tools/*.py
+!backup/tools/lib/
+!backup/tools/lib/*.py
+!backup/config/
+!backup/config/msmtprc.example
+!backup/config/backup.xml-example
+!backup/config/backup.yaml
+!backup/config/backup.xsd
+!backup/**/__init__.py
+
+# Backup Service files (Shell version - maintain compatibility)
 !backup/scripts/
 !backup/scripts/main.sh
 !backup/scripts/status.sh
@@ -26,10 +41,6 @@
 !backup/scripts/tools/lib/
 !backup/scripts/tools/lib/mount.sh
 !backup/scripts/tools/lib/key_manager.sh
-!backup/config/
-!backup/config/msmtprc.example
-!backup/config/backup.xml-example
-!backup/config/backup.xsd
 
 # Key Server files
 !keyserver/
@@ -58,6 +69,11 @@ keyserver/data/
 *.bak
 *.swp
 *.tmp
+.pytest_cache/
+.coverage
+.mypy_cache/
+.venv/
+venv/
 
 # Ignore generated config files
 backup/config/backup.xml

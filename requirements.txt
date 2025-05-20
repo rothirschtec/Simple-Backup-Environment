@@ -1,0 +1,8 @@
+# Core requirements
+PyYAML==6.0
+requests==2.29.0
+croniter==1.4.1
+python-dotenv==1.0.0
+
+# For keyserver integration
+cryptography==41.0.4

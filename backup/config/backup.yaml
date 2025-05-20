@@ -1,0 +1,30 @@
+---
+# SBE Backup Configuration
+servers:
+  # Daily backup - runs every day at 1 AM
+  - backupdirectory: ServerName
+    intervall: "01:00"  # Format: HH:MM
+    date: "*"  # * means every day
+    type: daily
+    retention: 7  # Keep last 7 daily backups
+  
+  # Weekly backup - runs every Sunday at 2 AM
+  - backupdirectory: ServerName
+    intervall: "02:00"
+    date: Sun  # Day of week (Sun, Mon, Tue, Wed, Thu, Fri, Sat)
+    type: weekly
+    retention: 4  # Keep last 4 weekly backups
+  
+  # Monthly backup - runs on the 1st of each month at 3 AM
+  - backupdirectory: ServerName
+    intervall: "03:00"
+    date: "1"  # Day of month (1-31)
+    type: monthly
+    retention: 12  # Keep last 12 monthly backups
+  
+  # Yearly backup - runs on January 1st at 4 AM
+  - backupdirectory: ServerName
+    intervall: "04:00"
+    date: Jan-1  # Format: Month-Day (Jan, Feb, Mar, Apr, May, Jun, Jul, Aug, Sep, Oct, Nov, Dec)
+    type: yearly
+    retention: 5  # Keep last 5 yearly backups
