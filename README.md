@@ -247,8 +247,10 @@ servers:
 For finer control over what gets backed up, each server directory can provide
 `include.txt` and `exclude.txt` files. These files contain standard `rsync`
 filter rules. The universal backup script automatically loads them and adds the
-patterns to the `rsync` command. You can also point to custom files in
-`server.config` using the `INCLUDE_FILE` and `EXCLUDE_FILE` options.
+patterns to the `rsync` command. Custom paths can be specified in
+`backup/config/backup.yaml` using the `include_file` and `exclude_file` options
+for each server. Legacy `server.config` entries (`INCLUDE_FILE` and
+`EXCLUDE_FILE`) are still honoured.
 
 A typical `exclude.txt` might skip system directories and temporary files:
 
@@ -277,11 +279,13 @@ server's directory (e.g. `store/host1/`).  If an `include.txt` or
 `exclude.txt` file exists there, the universal backup script adds the patterns
 to the `rsync` command automatically.  Lines starting with `#` are ignored.
 
-Alternatively you can specify custom paths in `server.config`:
+Alternatively you can specify custom paths in `backup/config/backup.yaml`:
 
-```
-INCLUDE_FILE=/path/to/include.txt
-EXCLUDE_FILE=/path/to/exclude.txt
+```yaml
+servers:
+  - backupdirectory: server1
+    include_file: /path/to/include.txt
+    exclude_file: /path/to/exclude.txt
 ```
 
 Relative paths are resolved against the server's directory.  Use this feature

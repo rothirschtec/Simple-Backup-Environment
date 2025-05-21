@@ -20,13 +20,15 @@ logging.basicConfig(
 )
 logger = logging.getLogger(__name__)
 
-def run_backup(server_name, backup_type="daily", retention=None):
+def run_backup(server_name, backup_type="daily", retention=None, include_file=None, exclude_file=None):
     """Run a backup with the specified server, type and retention
     
     Args:
         server_name: Name of the server to back up
         backup_type: Type of backup (daily, weekly, monthly, yearly, latest)
         retention: Number of backups to keep
+        include_file: Optional path to rsync include patterns
+        exclude_file: Optional path to rsync exclude patterns
     """
     logger.info(f"Starting {backup_type} backup for {server_name}")
     
@@ -68,8 +70,10 @@ def run_backup(server_name, backup_type="daily", retention=None):
         rsync_opts.extend(["-e", ssh_cmd])
 
         # Apply include/exclude patterns
-        exclude_file = config.get("EXCLUDE_FILE")
-        include_file = config.get("INCLUDE_FILE")
+        if exclude_file is None:
+            exclude_file = config.get("EXCLUDE_FILE")
+        if include_file is None:
+            include_file = config.get("INCLUDE_FILE")
 
         # Fallback to default files in the server directory
         if not exclude_file:
@@ -218,6 +222,8 @@ if __name__ == "__main__":
     parser.add_argument("--yearly", action="store_true", help="Run yearly backup")
     parser.add_argument("--latest", action="store_true", help="Run latest backup")
     parser.add_argument("--retention", type=int, help="Number of backups to keep")
+    parser.add_argument("--include-file", help="Path to include patterns file")
+    parser.add_argument("--exclude-file", help="Path to exclude patterns file")
     
     args = parser.parse_args()
     
@@ -233,7 +239,7 @@ if __name__ == "__main__":
         backup_type = "latest"
     
     # Run backup
-    success = run_backup(args.server, backup_type, args.retention)
+    success = run_backup(args.server, backup_type, args.retention, args.include_file, args.exclude_file)
     
     # Exit with appropriate code
     sys.exit(0 if success else 1)

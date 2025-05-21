@@ -305,9 +305,12 @@ class BackupScheduler:
         
         # If all conditions are met, run backup
         if should_run:
-            self._run_backup(directory, backup_type, retention)
+            include_file = server_config.get("include_file")
+            exclude_file = server_config.get("exclude_file")
+            self._run_backup(directory, backup_type, retention, include_file, exclude_file)
     
-    def _run_backup(self, directory: str, backup_type: str, retention: Optional[int] = None) -> None:
+    def _run_backup(self, directory: str, backup_type: str, retention: Optional[int] = None,
+                    include_file: Optional[str] = None, exclude_file: Optional[str] = None) -> None:
         """Run a backup
         
         Args:
@@ -342,11 +345,17 @@ class BackupScheduler:
         
         # Build command
         command = [
-            sys.executable, 
-            str(universal_script), 
+            sys.executable,
+            str(universal_script),
             "--server", directory,
             f"--{backup_type}"
         ]
+
+        if include_file:
+            command.extend(["--include-file", include_file])
+
+        if exclude_file:
+            command.extend(["--exclude-file", exclude_file])
         
         if retention is not None:
             command.extend(["--retention", str(retention)])
