@@ -7,6 +7,8 @@ servers:
     date: "*"  # * means every day
     type: daily
     retention: 7  # Keep last 7 daily backups
+    include_file: include.txt  # Optional include patterns
+    exclude_file: exclude.txt  # Optional exclude patterns
   
   # Weekly backup - runs every Sunday at 2 AM
   - backupdirectory: ServerName
@@ -14,6 +16,8 @@ servers:
     date: Sun  # Day of week (Sun, Mon, Tue, Wed, Thu, Fri, Sat)
     type: weekly
     retention: 4  # Keep last 4 weekly backups
+    include_file: include.txt
+    exclude_file: exclude.txt
   
   # Monthly backup - runs on the 1st of each month at 3 AM
   - backupdirectory: ServerName
@@ -21,6 +25,8 @@ servers:
     date: "1"  # Day of month (1-31)
     type: monthly
     retention: 12  # Keep last 12 monthly backups
+    include_file: include.txt
+    exclude_file: exclude.txt
   
   # Yearly backup - runs on January 1st at 4 AM
   - backupdirectory: ServerName
@@ -28,3 +34,5 @@ servers:
     date: Jan-1  # Format: Month-Day (Jan, Feb, Mar, Apr, May, Jun, Jul, Aug, Sep, Oct, Nov, Dec)
     type: yearly
     retention: 5  # Keep last 5 yearly backups
+    include_file: include.txt
+    exclude_file: exclude.txt
