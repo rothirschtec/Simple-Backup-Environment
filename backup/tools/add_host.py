@@ -227,6 +227,9 @@ class HostManager:
         # Create backup directory fresh
         backup_dir.mkdir(parents=True, exist_ok=True)
         mounted_dir.mkdir(parents=True, exist_ok=True)
+
+        # Populate default include/exclude patterns
+        self._create_default_pattern_files(backup_dir)
         
         # Create backup image file
         try:
@@ -514,6 +517,25 @@ python3 {universal_script} --server {hostname} "$@"
         except Exception as e:
             logger.error(f"Error creating backup script wrapper: {str(e)}")
             return False
+
+    def _create_default_pattern_files(self, server_dir: Path) -> None:
+        """Generate default include.txt and exclude.txt for a Linux server
+
+        Args:
+            server_dir: Directory of the server in the store
+        """
+        try:
+            include_path = server_dir / "include.txt"
+            exclude_path = server_dir / "exclude.txt"
+
+            if not include_path.exists():
+                include_path.write_text("/etc/\n/home/\n/var/www/\n")
+            if not exclude_path.exists():
+                exclude_path.write_text(
+                    "/proc/\n/sys/\n/dev/\n/run/\n/tmp/\n/var/cache/*\n/home/*/.cache/\n"
+                )
+        except Exception as e:
+            logger.warning(f"Failed to create default pattern files: {str(e)}")
     
     def _transfer_ssh_key(self, user: str, server: str, port: str) -> Tuple[bool, str]:
         """Transfer SSH public key to remote server
