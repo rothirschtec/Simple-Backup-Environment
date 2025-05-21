@@ -116,6 +116,10 @@ Adds a new host for backup. In interactive mode, you'll be prompted for:
 - Whether to transfer SSH key
 - Whether to run an initial backup
 
+`add_host` also creates default `include.txt` and `exclude.txt` files in the
+new host directory with common Linux patterns. Edit these files to customise
+what rsync includes or excludes.
+
 ### Mount/Unmount Backup Volumes
 
 ```bash
