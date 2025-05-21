@@ -42,14 +42,12 @@ def run_backup(server_name, backup_type="daily", retention=None, include_file=No
 
     # Ensure mount
     mounter = BackupMounter(str(base_dir))
-    mounted_here = False
     if not _is_mounted(mount_dir):
         success, msg = mounter.mount_backup_directory(server_name)
         if not success:
             logger.error(f"Failed to mount backup directory: {msg}")
             return False
         mounter.initialize_backup_directories(server_name)
-        mounted_here = True
     
     # Create timestamp for this backup
     timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
@@ -146,10 +144,9 @@ def run_backup(server_name, backup_type="daily", retention=None, include_file=No
         logger.error(f"Backup failed: {str(e)}")
         success = False
     finally:
-        if mounted_here:
-            u_success, msg = mounter.unmount_backup_directory(server_name)
-            if not u_success:
-                logger.error(f"Failed to unmount backup directory: {msg}")
+        u_success, msg = mounter.unmount_backup_directory(server_name)
+        if not u_success:
+            logger.error(f"Failed to unmount backup directory: {msg}")
 
     return success
 
