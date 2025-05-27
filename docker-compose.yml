@@ -14,7 +14,7 @@ services:
       - ./:/opt/SBE
       - ${REPORTS_DIR:-/var/SBE/reports}:${REPORTS_DIR:-/var/SBE/reports}
       - ${SETTINGS_DIR:-/var/SBE/settings}:${SETTINGS_DIR:-/var/SBE/settings}
-      - ./backup/config/msmtprc:/etc/msmtprc
+      # msmtprc is now generated dynamically from template and .env
       - /etc/localtime:/etc/localtime:ro
     environment:
       - KEYSERVER_HOST=${KEYSERVER_HOST:-https://sbe.keyserver.example.com:8443}

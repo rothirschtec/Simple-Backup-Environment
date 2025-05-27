@@ -14,6 +14,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     rsync \
     shellcheck \
     sqlite3 \
+    gettext \
     tree \
     unzip \
     vim \
@@ -64,5 +65,10 @@ RUN mv /tmp/wrapper_scripts/* /usr/local/bin/ && \
              /usr/local/bin/run_backup && \
     rmdir /tmp/wrapper_scripts
 
-# Set default command
+
+# Generate msmtprc file on container start, then exec main program
+COPY backup/scripts/generate_msmtprc.sh /usr/local/bin/generate_msmtprc.sh
+RUN chmod +x /usr/local/bin/generate_msmtprc.sh
+
+ENTRYPOINT ["/usr/local/bin/generate_msmtprc.sh"]
 CMD ["python3", "/opt/SBE/backup/main.py"]

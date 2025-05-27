@@ -86,6 +86,14 @@ class BackupScheduler:
         # Main loop
         try:
             while self.running:
+                # Sync backup hosts configuration (add/remove hosts by servers.yaml)
+                try:
+                    subprocess.run([
+                        sys.executable,
+                        str((Path(__file__).parent / "tools" / "manage_hosts.py").resolve())
+                    ], check=True)
+                except Exception as e:
+                    logger.error(f"manage_hosts.py failed: {e}")
                 # Wait until the start of the next minute
                 self._wait_for_next_minute()
                 
