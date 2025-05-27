@@ -1,3 +1,7 @@
+try:
+    from lib.config import ConfigManager
+except ImportError:
+    from backup.tools.lib.config import ConfigManager
 #!/usr/bin/env python3
 
 import os
@@ -21,6 +25,47 @@ logging.basicConfig(
 logger = logging.getLogger(__name__)
 
 def run_backup(server_name, backup_type="daily", retention=None, include_file=None, exclude_file=None):
+    # Set base directory to the SBE root
+    base_dir = Path(__file__).resolve().parent.parent.parent
+
+    # --- Patch start: Look up include/exclude patterns in backup.yaml (if possible, after base_dir is set)
+    config_mgr = ConfigManager(str(base_dir))
+    backup_conf = config_mgr.load_backup_config()
+    best_task = None
+    include_patterns = None
+    exclude_patterns = None
+    # Look for best matching task for this server_name and backup_type
+    for task in (backup_conf.get('servers') or []):
+        if str(task.get('backupdirectory')) == str(server_name) and str(task.get('type','')) == str(backup_type):
+            best_task = task
+            include_patterns = task.get('include')
+            exclude_patterns = task.get('exclude')
+            break
+
+    # If backup.yaml defines patterns, use them (write temp files)
+    temp_dir = None
+    if include_patterns or exclude_patterns:
+        import tempfile
+        temp_dir = tempfile.TemporaryDirectory(prefix='sbe_patterns_')
+        if include_patterns:
+            in_path = Path(temp_dir.name) / 'include.txt'
+            with open(in_path, 'w') as f:
+                if isinstance(include_patterns, list):
+                    for line in include_patterns:
+                        f.write(f"{line}\n")
+                else:
+                    f.write(str(include_patterns) + "\n")
+            include_file = str(in_path)
+        if exclude_patterns:
+            ex_path = Path(temp_dir.name) / 'exclude.txt'
+            with open(ex_path, 'w') as f:
+                if isinstance(exclude_patterns, list):
+                    for line in exclude_patterns:
+                        f.write(f"{line}\n")
+                else:
+                    f.write(str(exclude_patterns) + "\n")
+            exclude_file = str(ex_path)
+    # --- Patch end: if not found, fallback proceeds as before
     """Run a backup with the specified server, type and retention
     
     Args:

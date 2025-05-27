@@ -223,6 +223,8 @@ previous XML format. The configuration files are located in the `backup/config/`
 ### Example YAML Configuration
 
 # SBE Backup Configuration
+
+```yaml
 servers:
   # Daily backup - runs every day at 1 AM
   - backupdirectory: ServerName
@@ -246,7 +248,7 @@ servers:
   retention: 12  # Keep last 12 monthly backups
 ```
 
-### Include/Exclude Patterns
+### Include/Exclude Patterns for Backups
 
 For finer control over what gets backed up, each server directory can provide
 `include.txt` and `exclude.txt` files. These files contain standard `rsync`
@@ -297,7 +299,7 @@ to skip paths like `/proc` or `/sys` that may cause errors during backup.
 
 ## Directory Structure
 
-```
+```ini
 SBE/
 ├── backup/              # Backup service component (Python)
 │   ├── tools/           # Python utility scripts
@@ -321,16 +323,19 @@ SBE/
 SBE uses LUKS encryption for backups, which relies on the Linux device mapper. If you encounter issues with device mapper entries already existing, try these steps:
 
 1. List all device mapper entries:
+
    ```bash
    dmsetup ls
    ```
 
 2. Remove conflicting entries:
+
    ```bash
    dmsetup remove -f device_name
    ```
 
 3. If device is busy and cannot be removed:
+
    ```bash
    # Check what's using the device
    lsof | grep device_name
@@ -343,6 +348,7 @@ SBE uses LUKS encryption for backups, which relies on the Linux device mapper. I
    ```
 
 4. For persistent issues, restart the container:
+
    ```bash
    docker restart sbe.backup.your.domain
    ```
@@ -354,22 +360,26 @@ SBE uses LUKS encryption for backups, which relies on the Linux device mapper. I
 If the keyserver is not connecting properly:
 
 1. Check the `.env` file to ensure the `KEYSERVER_HOST` is correctly configured:
+
    ```bash
    nano /opt/SBE/.env
    # Make sure KEYSERVER_HOST does not contain ${DOMAIN} or other variables
    ```
 
 2. Test connectivity to the keyserver:
+
    ```bash
    curl -vk https://sbe.keyserver.your.domain:8443/health
    ```
 
 3. Ensure the keyserver container is running:
+
    ```bash
    docker ps | grep keyserver
    ```
 
 4. Check keyserver logs:
+
    ```bash
    docker logs sbe.keyserver.your.domain
    ```
@@ -389,6 +399,7 @@ If you encounter SSL certificate verification issues:
 If you get "Backup script not found" errors:
 
 1. Check if the universal backup script exists:
+
    ```bash
    ls -la /opt/SBE/backup/tools/backup_server.py
    ```
@@ -396,6 +407,7 @@ If you get "Backup script not found" errors:
 2. If missing, create it using the provided templates in this repository.
 
 3. Make sure the wrapper script for the host is correctly created:
+
    ```bash
    # For a host named "server1"
    cat /opt/SBE/store/server1/backup_server.py
@@ -408,6 +420,7 @@ If you get "Backup script not found" errors:
 If you have an existing installation and want to upgrade to the universal backup script approach:
 
 1. First, copy the universal backup script:
+
    ```bash
    docker exec -it sbe.backup.your.domain bash
    
@@ -417,6 +430,7 @@ If you have an existing installation and want to upgrade to the universal backup
    ```
 
 2. Create wrapper scripts for each existing host:
+
    ```bash
    # For each host, e.g., "server1"
    cat > /opt/SBE/store/server1/backup_server.py << 'EOF'
@@ -427,6 +441,7 @@ If you have an existing installation and want to upgrade to the universal backup
    ```
 
 3. Add the `run_backup` command:
+
    ```bash
    cat > /usr/local/bin/run_backup << 'EOF'
    #!/bin/bash

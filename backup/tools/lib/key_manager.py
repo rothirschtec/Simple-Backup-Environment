@@ -41,6 +41,12 @@ class KeyManager:
             
         logger.info(f"KeyManager initialized with keyserver: {self.keyserver_host}")
     
+    def _get_verify_setting(self):
+        """Decide if certificate verification should be used (True for prod, False for dev/self-signed)."""
+        val = os.environ.get("KEYSERVER_VERIFY", "true").strip().lower()
+        if val in ("0", "no", "false"): return False
+        return True
+
     def store_encryption_key(self, hostname: str, encryption_key: str) -> Tuple[bool, str]:
         """Store an encryption key in the key server
         
@@ -67,7 +73,7 @@ class KeyManager:
                     "Authorization": f"Bearer {self.api_key}"
                 },
                 json=payload,
-                verify=False  # Set to False for self-signed certs in dev
+                verify=self._get_verify_setting()
             )
             
             # Check response
@@ -104,7 +110,7 @@ class KeyManager:
             response = requests.get(
                 f"{self.keyserver_host}/api/keys/{hostname}",
                 headers={"Authorization": f"Bearer {self.api_key}"},
-                verify=False  # Set to False for self-signed certs in dev
+                verify=self._get_verify_setting()
             )
             
             # Check response
@@ -148,7 +154,7 @@ class KeyManager:
             response = requests.delete(
                 f"{self.keyserver_host}/api/keys/{hostname}",
                 headers={"Authorization": f"Bearer {self.api_key}"},
-                verify=False  # Set to False for self-signed certs in dev
+                verify=self._get_verify_setting()
             )
             
             # Check response
@@ -180,7 +186,7 @@ class KeyManager:
             # Send request to key server health endpoint
             response = requests.get(
                 f"{self.keyserver_host}/health",
-                verify=False,  # Set to False for self-signed certs in dev
+                verify=self._get_verify_setting(),
                 timeout=5     # Add a timeout to avoid hanging
             )
             

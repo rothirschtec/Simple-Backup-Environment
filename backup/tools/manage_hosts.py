@@ -15,7 +15,7 @@ import shutil
 # Config paths
 BASE_DIR = Path(__file__).resolve().parent.parent.parent
 CONFIG_YAML = BASE_DIR / "backup" / "config" / "servers.yaml"
-STORE_DIR = BASE_DIR / "backup" / "store"
+STORE_DIR = BASE_DIR / "store"
 ADD_HOST_SCRIPT = BASE_DIR / "backup" / "tools" / "add_host.py"
 
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
@@ -41,7 +41,8 @@ def add_host(entry):
         '--max-size', entry['max_size'],
         '--ssh-user', entry['ssh_user'],
         '--server-ip', entry['server_ip'],
-        '--ssh-port', str(entry.get('ssh_port', 22))
+        '--ssh-port', str(entry.get('ssh_port', 22)),
+        '--non-interactive',
     ]
     if entry.get('encrypted', False):
         cmd.append('--encrypted')
@@ -54,9 +55,36 @@ def add_host(entry):
     res = subprocess.run(cmd, capture_output=True, text=True)
     if res.returncode != 0:
         log.error(f"add_host.py failed: {res.stderr.strip()}")
+        return False
     else:
         log.info(f"add_host.py success: {res.stdout.strip()}")
-    return res.returncode == 0
+        hostname = entry['hostname']
+        host_dir = STORE_DIR / hostname
+        modified = False
+
+        def upsert_list_file(filename, lines):
+            path = host_dir / filename
+            new_content = "\n".join(lines or []) + "\n" if lines else ""
+            if path.exists():
+                with open(path, "r") as f:
+                    existing = f.read()
+                if existing == new_content:
+                    return False  # No change
+            if lines is not None:
+                with open(path, "w") as f:
+                    f.write(new_content)
+                return True
+            return False
+
+        if 'include' in entry:
+            if upsert_list_file("include.txt", entry.get('include')):
+                log.info(f"Updated include.txt for {hostname}")
+                modified = True
+        if 'exclude' in entry:
+            if upsert_list_file("exclude.txt", entry.get('exclude')):
+                log.info(f"Updated exclude.txt for {hostname}")
+                modified = True
+        return True
 
 def unmount_and_remove_host(hostname):
     """Unmount, close luks, and remove the store dir for a host"""
