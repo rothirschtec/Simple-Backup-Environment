@@ -231,7 +231,8 @@ class HostManager:
         # Populate default include/exclude patterns
         self._create_default_pattern_files(backup_dir)
         
-        # Create backup image file
+        # Create backup image file, fallback to dd if fallocate not supported
+        import re
         try:
             logger.info(f"Creating backup image of size {max_size}")
             result = subprocess.run(
@@ -239,9 +240,27 @@ class HostManager:
                 capture_output=True,
                 text=True
             )
-            
             if result.returncode != 0:
-                return False, f"Failed to create backup image: {result.stderr}"
+                if "Operation not supported" in result.stderr:
+                    logger.warning("fallocate not supported, falling back to dd")
+                    # Convert max_size like '50G' or '1000M' to megabytes
+                    size = max_size.strip().upper()
+                    m = re.match(r"^(\d+)([GM])$", size)
+                    if not m:
+                        return False, f"Unsupported max_size format: {max_size}"
+                    num = int(m.group(1))
+                    unit = m.group(2)
+                    if unit == "G":
+                        count = num * 1024
+                    else:
+                        count = num
+                    # bs=1M, count=megabytes
+                    dd_cmd = ["dd", "if=/dev/zero", f"of={backup_img}", "bs=1M", f"count={count}"]
+                    dd_result = subprocess.run(dd_cmd, capture_output=True, text=True)
+                    if dd_result.returncode != 0:
+                        return False, f"Failed to create backup image with dd: {dd_result.stderr}"
+                else:
+                    return False, f"Failed to create backup image: {result.stderr}"
         except Exception as e:
             return False, f"Error creating backup image: {str(e)}"
         
