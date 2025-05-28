@@ -39,6 +39,14 @@ mechanisms for reliability.
 - Redundancy with local backup copies
 - Fallback mechanisms for reliability
 
+## Requirements
+
+- Python 3.11+ (system and containers)
+- Docker & Docker Compose (for running the full stack)
+- Linux host with device-mapper support (for encrypted backups)
+- System packages (Debian/Ubuntu): see `backup/Dockerfile` for a full list, including `cryptsetup`, `msmtp`, `mailutils`, and others
+- Python requirements: see `requirements.txt` (backup) and `keyserver/requirements.txt`
+
 ## Quick Start
 
 1. Clone the repository:
@@ -88,6 +96,19 @@ mechanisms for reliability.
    ```bash
    DOMAIN=your.domain docker compose up -d
    ```
+
+## CLI Tools
+
+The backup container provides several command line tools (installed to `/usr/local/bin/`). You can call these with `docker exec` or from within the container:
+
+- `add_host` - Add and initialize a new server for backup (creates volume, keys, config)
+- `mount_backup` - Mount and decrypt a backup volume for browsing/restore
+- `backup_status` - Show status of running/completed backups and mounted volumes
+- `backup_scheduler` - Start the periodic backup scheduler service
+- `run_backup` - (Advanced) manually trigger a backup operation
+
+Helper/test utilities:
+- `luks_diagnostic.sh`, `luks_diagnostic.py` - Test container environment for LUKS/cryptsetup operation
 
 6. Add your first backup host:
 
@@ -276,6 +297,34 @@ And a simple `include.txt` can list important paths to keep:
 /etc/
 /home/
 /var/www/
+## Usage Workflow
+
+1. **Add Host**: Register a new backup target with `add_host`, specifying encryption and ssh details
+2. **Configure Schedules**: Edit your `backup.yaml` as needed (can be reloaded without container restart)
+3. **Run Backups**: Let the scheduler handle periodic backups, or force through command line
+4. **Monitor/Report**: Use `backup_status` to inspect queues, running, finished, and mounted volumes. Reports and logs are written to `$REPORTS_DIR`.
+5. **Mount/Restore**: Use `mount_backup` to temporarily access backup data (read-only) after decryption
+
+For the detailed communication/integration between the backup service and key server, see [docs/integration.md](docs/integration.md).
+
+## Testing & Diagnostics
+
+- `luks_diagnostic.sh`/`luks_diagnostic.py`: Run in container or on host to test LUKS setup and diagnose issues with encrypted volumes. Useful for troubleshooting device-mapper or permission problems.
+
+## Development & Contribution
+
+- Python source for the backup service is in `backup/` (logic, scheduling, CLI)
+- Keyserver code is in `keyserver/` (Flask REST API, DB)
+- Scripts for setup, msmtp config, and cert generation are in `backup/scripts/` and `keyserver/scripts/`
+- To add new features, open PRs; contributions and issues welcome!
+
+## Troubleshooting
+
+- If you see issues with device-mapper or cryptsetup, run the diagnostics
+- Scheduler won't run if the config is missing or invalid (see logs and make sure `.env` and `backup.yaml` are present)
+- Keyserver failures: check logs, DB connectivity, and API key matches
+- Email not sending? Check your SMTP config and logs
+
 ```
 
 ### Rsync Include/Exclude Patterns
@@ -425,6 +474,10 @@ If you have an existing installation and want to upgrade to the universal backup
    docker exec -it sbe.backup.your.domain bash
    
    # Create the universal backup script
+
+## Support
+For more details on architecture and advanced integration, see [`docs/integration.md`](docs/integration.md).
+
    curl -s https://raw.githubusercontent.com/rothirschtec/Simple-Backup-Environment/main/backup/tools/backup_server.py > /opt/SBE/backup/tools/backup_server.py
    chmod +x /opt/SBE/backup/tools/backup_server.py
    ```
