@@ -52,6 +52,7 @@ services:
       - backup-net
     depends_on:
       - sbe-keyserver-db
+    command: ["/wait-for-it.sh", "sbe-keyserver-db:5432", "--timeout=40", "--", "python3", "app.py"]
 
   # Key Server Database
   sbe-keyserver-db:

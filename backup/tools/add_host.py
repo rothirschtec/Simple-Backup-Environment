@@ -273,10 +273,7 @@ class HostManager:
             if not success:
                 return False, message
 
-            # Store passphrase both locally and in key server
-            with open(backup_dir / "passphrase", "w") as f:
-                f.write(passphrase)
-
+            # ONLY store passphrase in keyserver; never locally
             # Determine final device name (it may have been changed)
             device_name_file = backup_dir / "device_name"
             if device_name_file.exists():
@@ -285,26 +282,19 @@ class HostManager:
             else:
                 with open(device_name_file, "w") as f:
                     f.write(device_name)
-            
-            # Always try to store in key server first
             logger.info("Attempting to store encryption key in key server")
             health_ok, health_msg = self.key_manager.check_keyserver_health()
             if health_ok:
                 success, message = self.key_manager.store_encryption_key(hostname, passphrase)
                 if success:
-                    # Mark that this host uses the key server
                     (backup_dir / ".use_keyserver").touch()
                     logger.info("Key stored in key server and marked for keyserver use")
-                    
-                    # Backup locally as fallback
-                    self.key_manager.backup_key_locally(hostname, passphrase, str(backup_dir))
-                    logger.info("Key backed up locally as fallback")
                 else:
-                    logger.warning(f"Key server unavailable: {message}")
-                    logger.info("Using local passphrase file only")
+                    logger.error(f"Key server unavailable: {message}, aborting host creation.")
+                    raise RuntimeError("Failed to store encryption key in keyserver; aborting host creation.")
             else:
-                logger.warning(f"Key server health check failed: {health_msg}")
-                logger.info("Using local passphrase file only")
+                logger.error(f"Key server health check failed: {health_msg}, aborting host creation.")
+                raise RuntimeError("Failed to contact keyserver; aborting host creation.")
             
             # Format the device
             result = subprocess.run(

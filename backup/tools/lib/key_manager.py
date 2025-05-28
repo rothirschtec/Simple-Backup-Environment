@@ -208,85 +208,18 @@ class KeyManager:
             logger.error(error_msg)
             return False, error_msg
     
+    # backup_key_locally is completely disabled for security: do not backup passphrase locally!
     def backup_key_locally(self, hostname: str, key: str, backup_dir: Optional[str] = None) -> Tuple[bool, str]:
-        """Backup an encryption key to local file as fallback
-        
-        Args:
-            hostname: Hostname identifier for the key
-            key: The encryption key to backup
-            backup_dir: Directory to store the backup (default: hostname dir)
-            
-        Returns:
-            Tuple of (success, message)
-        """
-        try:
-            # Determine backup location
-            if backup_dir:
-                backup_path = Path(backup_dir) / "passphrase.backup"
-            else:
-                # Assuming standard SBE structure
-                base_dir = Path(__file__).resolve().parent.parent.parent.parent
-                backup_path = base_dir / "store" / hostname / "passphrase.backup"
-            
-            # Create parent directories if they don't exist
-            backup_path.parent.mkdir(parents=True, exist_ok=True)
-            
-            # Write key to file
-            with open(backup_path, "w") as backup_file:
-                backup_file.write(key)
-            
-            # Create marker file to indicate key server is used
-            marker_path = backup_path.parent / ".use_keyserver"
-            marker_path.touch()
-            
-            return True, f"Key backed up to {backup_path}"
-            
-        except Exception as e:
-            error_msg = f"Error backing up key: {str(e)}"
-            logger.error(error_msg)
-            return False, error_msg
+        """Disabled: Backing up encryption key locally is not permitted for security reasons."""
+        logger.error('backup_key_locally is disabled -- not writing any key!')
+        return False, 'Local encryption key backup is disabled.'
     
     def get_key_with_fallback(self, hostname: str, backup_dir: Optional[str] = None) -> Tuple[bool, str]:
-        """Retrieve key with fallback to local backup if key server fails
-        
-        Args:
-            hostname: Hostname identifier for the key
-            backup_dir: Directory where backup is stored (default: hostname dir)
-            
-        Returns:
-            Tuple of (success, key_or_error_message)
         """
-        # Try key server first
-        success, key_or_error = self.retrieve_encryption_key(hostname)
+        STRICT MODE: Only allow backup if keyserver is available and key can be retrieved. No local fallback!
+        """
+        success, key = self.retrieve_encryption_key(hostname)
         if success:
-            return True, key_or_error
-        
-        logger.warning(f"Failed to retrieve key from server: {key_or_error}")
-        logger.info("Trying local backup...")
-        
-        # Determine backup location
-        if backup_dir:
-            backup_path = Path(backup_dir) / "passphrase.backup"
-            alt_backup_path = Path(backup_dir) / "passphrase"
-        else:
-            # Assuming standard SBE structure
-            base_dir = Path(__file__).resolve().parent.parent.parent.parent
-            backup_path = base_dir / "store" / hostname / "passphrase.backup"
-            alt_backup_path = base_dir / "store" / hostname / "passphrase"
-        
-        # Try backup file
-        try:
-            if backup_path.exists():
-                with open(backup_path, "r") as backup_file:
-                    key = backup_file.read().strip()
-                return True, key
-            elif alt_backup_path.exists():
-                with open(alt_backup_path, "r") as backup_file:
-                    key = backup_file.read().strip()
-                return True, key
-            else:
-                return False, "Key not found in server or local backup"
-        except Exception as e:
-            error_msg = f"Error reading backup key: {str(e)}"
-            logger.error(error_msg)
-            return False, error_msg
+            return True, key
+        # DO NOT FALL BACK: fail if keyserver cannot provide key
+        return False, f"Could not retrieve encryption key from key server for {hostname}; strict mode is enabled. No backups allowed."
