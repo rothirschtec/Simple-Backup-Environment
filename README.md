@@ -1,3 +1,13 @@
+---
+title: "Simple Backup Environment (SBE)"
+domains: [menegroth, eldamar]
+functions: [backup, automation, security]
+technologies: [python, docker, ansible, luks, postgresql]
+status: active
+maintainer: r9
+last_updated: 2025-01-05
+---
+
 # SBE - Simple Backup Environment with Key Server (Python Implementation)
 
 A comprehensive dockerized backup solution for automated remote server backups with
